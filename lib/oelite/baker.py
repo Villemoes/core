@@ -565,8 +565,6 @@ class OEliteBaker:
                     info("Maybe next time")
                     return 0
 
-        self.backup_stdio()
-
         # FIXME: add some kind of statistics, with total_tasks,
         # prebaked_tasks, running_tasks, failed_tasks, done_tasks
         task = self.runq.get_runabletask()
@@ -606,16 +604,6 @@ class OEliteBaker:
                         else:
                             print ''.join(fin.readlines()[-self.debug_loglines:])
         return exitcode
-
-    def backup_stdio(self):
-        self.real_stdin = os.dup(sys.stdin.fileno())
-        self.real_stdout = os.dup(sys.stdout.fileno())
-        self.real_stderr = os.dup(sys.stderr.fileno())
-
-    def restore_stdio(self):
-        os.dup2(self.real_stdin, sys.stdin.fileno())
-        os.dup2(self.real_stdout, sys.stdout.fileno())
-        os.dup2(self.real_stderr, sys.stderr.fileno())
 
     def setup_tmpdir(self):
 
