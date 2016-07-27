@@ -209,9 +209,6 @@ class OEliteTask:
             os.remove(self.logsymlink)
         os.symlink(os.path.basename(self.logfn), self.logsymlink)
 
-        real_stdin = os.dup(sys.stdin.fileno())
-        real_stdout = os.dup(sys.stdout.fileno())
-        real_stderr = os.dup(sys.stderr.fileno())
         os.dup2(stdin.fileno(), sys.stdin.fileno())
         os.dup2(logfile.fileno(), sys.stdout.fileno())
         os.dup2(logfile.fileno(), sys.stderr.fileno())
@@ -238,14 +235,9 @@ class OEliteTask:
 
         finally:
             # Cleanup stdin, stdout and stderr redirection
-            os.dup2(real_stdin, sys.stdin.fileno())
-            os.dup2(real_stdout, sys.stdout.fileno())
-            os.dup2(real_stderr, sys.stderr.fileno())
+            self.cookbook.baker.restore_stdio()
             stdin.close()
             logfile.close()
-            os.close(real_stdin)
-            os.close(real_stdout)
-            os.close(real_stderr)
             if os.path.exists(self.logfn) and os.path.getsize(self.logfn) == 0:
                 os.remove(self.logsymlink)
                 os.remove(self.logfn) # prune empty logfiles
