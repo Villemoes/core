@@ -577,7 +577,7 @@ class OEliteBaker:
             count += 1
             debug("")
             debug("Preparing %s"%(task))
-            task.prepare(self.runq)
+            task.prepare()
             meta = task.meta()
             info("Running %d / %d %s"%(count, total, task))
             task.build_started()

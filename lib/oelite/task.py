@@ -118,7 +118,7 @@ class OEliteTask:
             os.remove(hashpath)
 
 
-    def prepare(self, runq):
+    def prepare(self):
         meta = self.meta()
 
         buildhash = self.cookbook.baker.runq.get_task_buildhash(self)
