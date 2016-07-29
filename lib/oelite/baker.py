@@ -567,6 +567,8 @@ class OEliteBaker:
 
         # FIXME: add some kind of statistics, with total_tasks,
         # prebaked_tasks, running_tasks, failed_tasks, done_tasks
+        #
+        # FIXME: add back support for options.fake_build
         start = datetime.datetime.now()
         total = self.runq.number_of_tasks_to_build()
         count = 0
@@ -584,7 +586,7 @@ class OEliteBaker:
             task.prepare()
             info("Running %d / %d %s"%(count, total, task))
             task.build_started()
-            if self.options.fake_build or task.run():
+            if task.run():
                 task.build_done(self.runq.get_task_buildhash(task))
                 self.runq.mark_done(task)
             else:
