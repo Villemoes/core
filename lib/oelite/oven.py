@@ -34,6 +34,9 @@ class OEliteOven:
         self.total = baker.runq.number_of_tasks_to_build()
         self.count = 0
 
+    def currently_baking(self):
+        return self.starttime.keys()
+
     def add(self, task):
         self.capacity -= task.weight
         self.starttime[task] = datetime.datetime.now()
