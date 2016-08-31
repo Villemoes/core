@@ -33,9 +33,17 @@ class OEliteOven:
         self.failed_tasks = []
         self.total = baker.runq.number_of_tasks_to_build()
         self.count = 0
+        self.task_stat = dict()
 
     def currently_baking(self):
         return self.starttime.keys()
+
+    def update_task_stat(self, task, delta):
+        try:
+            stat = self.task_stat[task.name]
+        except KeyError:
+            stat = self.task_stat[task.name] = oelite.profiling.SimpleStats()
+        stat.append(delta)
 
     def add(self, task):
         self.capacity -= task.weight
@@ -46,6 +54,7 @@ class OEliteOven:
         delta = (now - self.starttime[task]).total_seconds()
         del self.starttime[task]
         self.capacity += task.weight
+        self.update_task_stat(task, delta)
         return delta
 
     def start(self, task):
