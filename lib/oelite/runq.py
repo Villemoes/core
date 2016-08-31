@@ -947,7 +947,7 @@ class OEliteRunQueue:
 
     def prune_runq_depends_nobuild(self):
         rowcount = 0
-        start = datetime.datetime.now()
+        start = oelite.util.now()
         while True:
             self.dbc.execute(
                 "UPDATE runq.depend SET parent_task=NULL "
@@ -969,7 +969,7 @@ class OEliteRunQueue:
     def prune_runq_depends_with_nobody_depending_on_it(self):
         #c = self.dbc.cursor()
         rowcount = 0
-        start = datetime.datetime.now()
+        start = oelite.util.now()
         while True:
             # The code below, until the executemany() call, implements
             # what was previously done with this horribly-performing
@@ -1001,7 +1001,7 @@ class OEliteRunQueue:
 
 
     def prune_runq_tasks(self):
-        start = datetime.datetime.now()
+        start = oelite.util.now()
         rowcount = self.dbc.execute(
             "UPDATE"
             "  runq.task "
