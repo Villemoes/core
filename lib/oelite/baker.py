@@ -630,6 +630,11 @@ class OEliteBaker:
                           (name, stats.sum, stats.count, stats.mean,
                            ", ".join(["%7.3f" % x for x in stats.quartiles])))
 
+        with oelite.profiling.profile_output("task_times.txt") as f:
+            for task in oven.completed_tasks:
+                f.write("%s\t%.3f\t%.3f\t%.3f\t%.3f\n" %
+                        (task, task.task_time, task.prefunc_time, task.func_time, task.postfunc_time))
+
         for task in oven.failed_tasks:
             exitcode = 1
             print "\nERROR: %s failed  %s"%(task,task.logfn)

@@ -36,6 +36,7 @@ class OEliteOven:
         self.capacity = capacity
         self.baker = baker
         self.starttime = dict()
+        self.completed_tasks = []
         self.failed_tasks = []
         self.total = baker.runq.number_of_tasks_to_build()
         self.count = 0
@@ -83,12 +84,14 @@ class OEliteOven:
         if result is None:
             return None
         delta = self.remove(task)
+        task.task_time = delta
 
         task.recipe.remaining_tasks -= 1
         if result:
             info("%s finished - %s s" % (task, delta))
             task.build_done(self.baker.runq.get_task_buildhash(task))
             self.baker.runq.mark_done(task)
+            self.completed_tasks.append(task)
         else:
             err("%s failed - %s s" % (task, delta))
             self.failed_tasks.append(task)
