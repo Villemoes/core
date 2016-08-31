@@ -11,6 +11,13 @@ now = datetime.datetime.utcnow
 
 profiledir = None
 
+def profile_output(name, mode="a"):
+    if profiledir:
+        path = os.path.join(profiledir, name)
+    else:
+        path = "/dev/null"
+    return open(path, mode)
+
 # Decorating any function with @profile_calls will record the duration
 # of every call of that function. Some statistics on these are
 # automatically printed to $profiledir/callstats.txt on exit.
@@ -29,8 +36,7 @@ def profile_calls(somefunc):
     return recordtime
 
 def write_call_stats():
-    outfn = os.path.join(profiledir, "call_stats.txt")
-    with open(outfn, "w") as out:
+    with profile_output("call_stats.txt") as out:
         for f in sorted(profiled_functions.keys(), key=lambda x: x.__name__):
             name = f.__name__
             try:
@@ -80,8 +86,7 @@ class Rusage:
 
     def print_delta(self):
         self.compute_delta()
-        outfn = os.path.join(profiledir, "rusage_delta.txt")
-        with open(outfn, "a") as f:
+        with profile_output("rusage_delta.txt") as f:
             f.write("%s:\n" % self.name)
             for key, name, fmt in self.rusage_names:
                 f.write(("  %s " + fmt + "\n") % (name, self.delta[key]))
@@ -136,8 +141,7 @@ def profile_rusage_delta(somefunc):
     return recorddelta
 
 def write_basic_info(config):
-    outfn = os.path.join(profiledir, "info.txt")
-    with open(outfn, "w") as f:
+    with profile_output("info.txt") as f:
         f.write("argv: %s\n" % " ".join(sys.argv))
         f.write("PARALLEL_MAKE: %s\n" % (config.get("PARALLEL_MAKE") or ""))
 
