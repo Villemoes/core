@@ -221,7 +221,8 @@ PACKAGEQA_BUILD_LIBDIRS ?= "\
 "
 
 def do_packageqa(d):
-    import os, magic, re
+    import os, re
+    import oelite.magicwrap
     from subprocess import Popen, PIPE
     from glob import glob
     import oebakery # die, err, warn, info, debug
@@ -230,7 +231,7 @@ def do_packageqa(d):
         pass
 
     os.environ['PATH'] = d.getVar("PATH", True)
-    filemagic = magic.open(magic.MAGIC_NONE)
+    filemagic = oelite.magicwrap.open()
     filemagic.load()
 
     pn = d.get("PN")
@@ -800,6 +801,7 @@ def do_packageqa(d):
             print 'DEPENDS_%s += "%s"'%(pkg_with_pn(pkg), depends)
         print "-"*42
 
+    filemagic.close()
     return ok
 
 addtask packageqaall after packageqa
