@@ -581,7 +581,6 @@ class OEliteBaker:
             debug("")
             debug("Preparing %s"%(task))
             task.prepare()
-            meta = task.meta()
             info("Running %d / %d %s"%(count, total, task))
             task.build_started()
             if self.options.fake_build or task.run():
