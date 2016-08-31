@@ -464,7 +464,7 @@ def movefile(src, dest, newmtime = None, sstat = None):
         newmtime = sstat[stat.ST_MTIME]
     return newmtime
 
-def copyfile(src, dest, newmtime = None, sstat = None):
+def copyfile(src, dest, sstat = None):
     """
     Copies a file from src to dest, preserving all permissions and
     attributes; mtime will be preserved even when moving across
@@ -500,22 +500,24 @@ def copyfile(src, dest, newmtime = None, sstat = None):
                 os.unlink(dest)
             os.symlink(target, dest)
             #os.lchown(dest,sstat[stat.ST_UID],sstat[stat.ST_GID])
-            return os.lstat(dest)
+            return True
         except Exception as e:
             print("copyfile: failed to properly create symlink:", dest, "->", target, e)
             return False
 
     if stat.S_ISREG(sstat[stat.ST_MODE]):
-        os.chmod(src, stat.S_IRUSR) # Make sure we can read it
+        if not (sstat[stat.ST_MODE] & 0400):
+            os.chmod(src, stat.S_IRUSR) # Make sure we can read it
         try: # For safety copy then move it over.
             oelite.compat.copyfile(src, dest + "#new")
             os.rename(dest + "#new", dest)
         except Exception as e:
             print('copyfile: copy', src, '->', dest, 'failed.', e)
-            os.chmod(src, stat.S_IMODE(sstat[stat.ST_MODE]))
             return False
         finally:
-            os.chmod(src, sstat[stat.ST_MODE])
+            if not (sstat[stat.ST_MODE] & 0400):
+                # Undo the above chmod
+                os.chmod(src, sstat[stat.ST_MODE])
 
     else:
         #we don't yet handle special, so we need to fall back to /bin/mv
@@ -530,12 +532,8 @@ def copyfile(src, dest, newmtime = None, sstat = None):
         print("copyfile: Failed to chown/chmod/unlink", dest, e)
         return False
 
-    if newmtime:
-        os.utime(dest, (newmtime, newmtime))
-    else:
-        os.utime(dest, (sstat[stat.ST_ATIME], sstat[stat.ST_MTIME]))
-        newmtime = sstat[stat.ST_MTIME]
-    return newmtime
+    os.utime(dest, (sstat[stat.ST_ATIME], sstat[stat.ST_MTIME]))
+    return True
 
 def which(path, item, direction = 0):
     """
