@@ -522,6 +522,9 @@ class OEliteBaker:
             info("Nothing to do")
             return 0
 
+        if False: # Expensive! Only for temporary hacking
+            oelite.profiling.do_memdump()
+
         if self.options.rmwork:
             for recipe in recipes:
                 if (tasks_todo != ["build"]
