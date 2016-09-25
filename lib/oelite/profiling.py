@@ -268,7 +268,6 @@ def do_small_dict_stat():
     # collection before dumping.
     gc.collect()
     small_dict_keys = dict()
-    override_dicts = []
     for ob in scanner.get_recursive_items(gc.get_objects()):
         if not isinstance(ob, dict):
             continue
@@ -281,13 +280,7 @@ def do_small_dict_stat():
             small_dict_keys[t] += 1
         else:
             small_dict_keys[t] = 1
-        if t == ('', '<', '>'):
-            override_dicts.append(ob)
     with profile_output("small_dict_keys.txt") as f:
         for t in sorted(small_dict_keys.keys(), key=lambda t: (len(t),small_dict_keys[t])+t):
             if small_dict_keys[t] > 1:
                 f.write("%s\t%d\n" % (repr(t), small_dict_keys[t]))
-
-    with profile_output("override_dict_stat.txt") as f:
-        for d in override_dicts:
-            f.write("%d\t%d\t%d\n" % (len(d['']), len(d['<']), len(d['>'])))
