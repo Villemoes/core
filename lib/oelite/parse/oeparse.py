@@ -498,7 +498,7 @@ class OEParser(object):
 
     def p_func(self, p):
         '''func : VARNAME FUNCSTART func_body FUNCSTOP'''
-        self.meta.set(p[1], p[3])
+        self.meta.set(p[1], intern(p[3]))
         self.meta.set_flag(p[1], "bash", True)
         p[0] = p[1]
         return
@@ -521,7 +521,7 @@ class OEParser(object):
 
     def p_python_func(self, p):
         '''python_func : python_func_start func_body FUNCSTOP'''
-        self.meta.set(p[1][0], p[2])
+        self.meta.set(p[1][0], intern(p[2]))
         self.meta.set_flag(p[1][0], "python", True)
         self.meta.set_flag(p[1][0], "args", "d")
         self.meta.set_flag(p[1][0], "filename", p[1][1])
@@ -553,7 +553,7 @@ class OEParser(object):
     def p_def_func(self, p):
         '''def_func : DEF VARNAME def_funcargs NEWLINE func_body
                     | DEF VARNAME def_funcargs NEWLINE func_body FUNCSTOP'''
-        self.meta.set(p[2], p[5])
+        self.meta.set(p[2], intern(p[5]))
         self.meta.set_flag(p[2], "python", True)
         if p[3][0]:
             self.meta.set_flag(p[2], "args", p[3][0])
