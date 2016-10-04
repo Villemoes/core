@@ -23,6 +23,7 @@ import re, fcntl, os, string, stat, shutil, time
 import sys
 import errno
 import logging
+import oelite.compat
 
 def explode_version(s):
     r = []
@@ -507,7 +508,7 @@ def copyfile(src, dest, newmtime = None, sstat = None):
     if stat.S_ISREG(sstat[stat.ST_MODE]):
         os.chmod(src, stat.S_IRUSR) # Make sure we can read it
         try: # For safety copy then move it over.
-            shutil.copyfile(src, dest + "#new")
+            oelite.compat.copyfile(src, dest + "#new")
             os.rename(dest + "#new", dest)
         except Exception as e:
             print('copyfile: copy', src, '->', dest, 'failed.', e)
