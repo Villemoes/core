@@ -39,7 +39,7 @@ def do_split(d):
             continue
         package_list.append(pkg)
 
-    seen = []
+    seen = set([])
     main_is_empty = 1
     main_pkg = bb.data.getVar("PN", d, 1)
 
@@ -70,7 +70,7 @@ def do_split(d):
                 continue
             if file in seen:
                 continue
-            seen.append(file)
+            seen.add(file)
             if os.path.isdir(file) and not os.path.islink(file):
                 oelite.util.makedirs(os.path.join(root,file))
                 os.chmod(os.path.join(root,file), os.stat(file).st_mode)
