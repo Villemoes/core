@@ -77,8 +77,7 @@ def set_stage(d, stage, stage_fixup_funcs, get_dstdir, unpackdir,
         print "unpacking %s to %s"%(filename, unpackdir)
         oelite.util.makedirs(unpackdir)
         os.chdir(unpackdir)
-        with TarFile(filename, debug=0, errorlevel=1) as tf:
-            tf.extractall()
+        oelite.util.extract_tarfile(filename)
 
         d["STAGE_FIXUP_PKG_TYPE"] = package.type
         for funcname in (d.get(stage_fixup_funcs) or "").split():
