@@ -526,7 +526,7 @@ class OEliteBaker:
             oelite.profiling.do_memdump()
 
         if False: # Expensive! Only for temporary hacking
-            oelite.profiling.do_small_dict_stat()
+            oelite.profiling.do_dict_stat()
 
         if self.options.rmwork:
             for recipe in recipes:
