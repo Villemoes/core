@@ -609,6 +609,13 @@ class OEliteBaker:
 
         rusage.end()
 
+        with oelite.profiling.profile_output("task_stat.txt") as out:
+            for name,stats in oven.task_stat.iteritems():
+                stats.compute()
+                out.write("%-16s  %7.1fs / %5d = %7.3fs  [%s]\n" %
+                          (name, stats.sum, stats.count, stats.mean,
+                           ", ".join(["%7.3f" % x for x in stats.quartiles])))
+
         for task in oven.failed_tasks:
             exitcode = 1
             print "\nERROR: %s failed  %s"%(task,task.logfn)
