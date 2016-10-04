@@ -508,11 +508,11 @@ def copyfile(src, dest, sstat = None):
     if stat.S_ISREG(sstat[stat.ST_MODE]):
         if not (sstat[stat.ST_MODE] & 0400):
             os.chmod(src, stat.S_IRUSR) # Make sure we can read it
-        try: # For safety copy then move it over.
-            oelite.compat.copyfile(src, dest + "#new")
-            os.rename(dest + "#new", dest)
+        try:
+            oelite.compat.copyfile(src, dest)
         except Exception as e:
             print('copyfile: copy', src, '->', dest, 'failed.', e)
+            remove(dest)
             return False
         finally:
             if not (sstat[stat.ST_MODE] & 0400):
