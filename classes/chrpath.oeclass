@@ -38,9 +38,9 @@ CHRPATH_REPLACE_STAGEDIRS:sdk-cross	= "1"
 do_chrpath[dirs] = "${D}"
 def do_chrpath(d):
     import stat
-    import magic
+    import oelite.magicwrap
 
-    filemagic = magic.open(magic.MAGIC_NONE)
+    filemagic = oelite.magicwrap.open()
     filemagic.load()
 
     replace_stagedirs = d.get("CHRPATH_REPLACE_STAGEDIRS")
@@ -139,6 +139,7 @@ def do_chrpath(d):
         if not rc:
             return rc
 
+    filemagic.close()
     return
 
 # Local Variables:
