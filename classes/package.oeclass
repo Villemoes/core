@@ -80,7 +80,7 @@ def do_split(d):
             if not dpath in created_dirs:
                 oelite.util.makedirs(dpath)
                 created_dirs.add(dpath)
-            ret = bb.utils.copyfile(file, fpath)
+            ret = bb.utils.copyfile(file, fpath, sstat = sc.lstat())
             if ret is False or ret == 0:
                 raise bb.build.FuncFailed("File population failed")
 
