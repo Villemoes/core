@@ -144,13 +144,15 @@ class OEliteOven:
     def wait_all(self, poll):
         """Do wait_task once for every task currently in the oven once. With
         poll=False, this amounts to waiting for every current task to
-        finish.
-
+        finish. Returns number of tasks succesfully waited for.
         """
         tasks = self.currently_baking()
         tasks.sort(key=lambda t: self.starttime[t])
+        ret = 0
         for t in tasks:
-            self.wait_task(poll, t)
+            if self.wait_task(poll, t):
+                ret += 1
+        return ret
 
     def write_profiling_data(self):
         with oelite.profiling.profile_output("task_stat.txt") as out:
@@ -159,4 +161,3 @@ class OEliteOven:
                 quarts = ", ".join(["%7.3f" % x for x in stats.quartiles])
                 out.write("%-16s  %7.1fs / %5d = %7.3fs  [%s]\n" %
                           (name, stats.sum, stats.count, stats.mean, quarts))
-
