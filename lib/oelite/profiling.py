@@ -211,6 +211,10 @@ def do_memdump():
     except ImportError:
         sys.stderr.write("meliae module unavailable\n")
         return
+    import gc
+    # to get more accurate and comparable results, do a full garbage
+    # collection before dumping.
+    gc.collect()
     with profile_output("meliae.json") as f:
         scanner.dump_all_objects(f)
 
@@ -221,6 +225,9 @@ def do_small_dict_stat():
         sys.stderr.write("meliae module unavailable\n")
         return
     import gc
+    # to get more accurate and comparable results, do a full garbage
+    # collection before dumping.
+    gc.collect()
     small_dict_keys = dict()
     override_dicts = []
     for ob in scanner.get_recursive_items(gc.get_objects()):
