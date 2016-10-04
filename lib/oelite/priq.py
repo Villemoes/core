@@ -21,5 +21,8 @@ class PriorityQueue:
     def pop(self):
         return heapq.heappop(self._data)[2]
 
+    def peak(self):
+        return self._data[0][2]
+
     def __len__(self):
         return len(self._data)
