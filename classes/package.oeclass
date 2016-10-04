@@ -51,8 +51,9 @@ def do_split(d):
         for file in files:
             if os.path.isabs(file):
                 file = "." + file
-            if not os.path.islink(file):
-                if os.path.isdir(file):
+            sc = oelite.path.statcache(file)
+            if not sc.islink():
+                if sc.isdir():
                     newfiles =  [os.path.join(file,x) for x in os.listdir(file)]
                     if newfiles:
                         files += newfiles
@@ -66,14 +67,14 @@ def do_split(d):
                     else:
                         globbed.remove(file)
                         files += globbed
-            if (not os.path.islink(file)) and (not os.path.exists(file)):
+            if (not sc.islink()) and (not sc.exists()):
                 continue
             if file in seen:
                 continue
             seen.add(file)
-            if os.path.isdir(file) and not os.path.islink(file):
+            if sc.isdir() and not sc.islink():
                 oelite.util.makedirs(os.path.join(root,file))
-                os.chmod(os.path.join(root,file), os.stat(file).st_mode)
+                os.chmod(os.path.join(root,file), sc.stat().st_mode)
                 continue
             fpath = os.path.join(root,file)
             dpath = os.path.dirname(fpath)
