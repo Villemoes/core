@@ -38,7 +38,7 @@ def do_split(d):
             continue
         package_list.append(pkg)
 
-    seen = []
+    seen = set([])
 
     for pkg in package_list:
         root = os.path.join(pkgd, pkg)
@@ -67,7 +67,7 @@ def do_split(d):
                 continue
             if file in seen:
                 continue
-            seen.append(file)
+            seen.add(file)
             if os.path.isdir(file) and not os.path.islink(file):
                 oelite.util.makedirs(os.path.join(root,file))
                 os.chmod(os.path.join(root,file), os.stat(file).st_mode)
