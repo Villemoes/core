@@ -4,6 +4,7 @@ import os
 import sys
 import subprocess
 import datetime
+import oelite.profiling
 
 from oelite.compat import dup_cloexec
 
@@ -168,6 +169,10 @@ class TarFile(tarfile.TarFile):
         except AttributeError:
             self.close()
 
+@oelite.profiling.profile_calls
+def extract_tarfile(filename):
+    with TarFile(filename, debug=0, errorlevel=1) as tf:
+        tf.extractall()
 
 def progress_info(msg, total, current):
     if os.isatty(sys.stdout.fileno()):
