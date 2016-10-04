@@ -178,7 +178,7 @@ class MetaData(MutableMapping):
             # FIXME: debug this, optimizing it so that we don't import
             # stuff more than absolutely necessary
             #print "importing module", module_name
-            base_name = module_name.split(".")[0]
+            base_name = intern(module_name.split(".")[0])
             g[base_name] = __import__(module_name, g, [], [], 0)
         self.pythonfunc_globals = g
         return
