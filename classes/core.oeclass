@@ -117,20 +117,16 @@ do_install[postfuncs] += "do_install_strip"
 do_install_strip[import] = "runstrip"
 def do_install_strip(d):
     import stat
-    def isexec(path):
-        try:
-            s = os.stat(path)
-        except (os.error, AttributeError):
-            return 0
-        return (s[stat.ST_MODE] & stat.S_IEXEC)
     if d.get("INHIBIT_PACKAGE_STRIP") != '1':
         os.chdir(d.get("D"))
         for root, dirs, files in os.walk("."):
             for f in files:
                file = os.path.join(root, f)
-               if os.path.islink(file) or os.path.isdir(file):
+               s = os.lstat(file)
+               m = s[stat.ST_MODE]
+               if stat.S_ISLNK(m) or stat.S_ISDIR(m):
                    continue
-               if isexec(file) or ".so" in os.path.basename(file):
+               if (m & stat.S_IEXEC) or ".so" in os.path.basename(file):
                    runstrip(file, d)
 
 def runstrip(file, d):
