@@ -577,21 +577,38 @@ class OEliteBaker:
         # FIXME: add back support for options.fake_build
         rusage = oelite.profiling.Rusage("Build")
         exitcode = 0
-        pending = PriorityQueue(key = lambda t: (-t.recipe.build_prio, t.recipe.remaining_tasks))
 
-        def update_pending(pending):
-            new_runable = self.runq.get_runabletasks()
-            for t in new_runable:
-                debug("")
-                debug("Preparing %s"%(t))
-                t.prepare()
-                pending.push(t)
+        class Pending:
+            def __init__(self, key):
+                self.sync = PriorityQueue(key = key)
+                self.async1 = PriorityQueue(key = key)
+                self.asyncX = PriorityQueue(key = key)
+
+            def update(self, runq):
+                new_runable = runq.get_runabletasks()
+                for t in new_runable:
+                    debug("")
+                    debug("Preparing %s"%(t))
+                    t.prepare()
+                    if t.function.is_async():
+                        if t.weight > 1:
+                            self.asyncX.push(t)
+                        else:
+                            self.async1.push(t)
+                    else:
+                        self.sync.push(t)
+
+            def __len__(self):
+                return len(self.sync) + len(self.async1) + len(self.asyncX)
+
+        pending = Pending(lambda t: (-t.recipe.build_prio, t.recipe.remaining_tasks))
 
         oven = OEliteOven(self)
         try:
             while oven.count < oven.total:
-                update_pending(pending)
-                if not pending or oven.capacity <= 0:
+                pending.update(self.runq)
+
+                if not pending:
                     # If we have no runable tasks and nothing in the
                     # oven, some tasks must have failed.
                     if not oven.currently_baking():
@@ -600,23 +617,29 @@ class OEliteBaker:
                     # make some new task eligible.
                     oven.wait_any(False)
                     continue
-                task = pending.pop()
-                oven.start(task)
-                # After starting a task, always do an immediate poll -
-                # if it was a synchronous task, it is already done by
-                # the time oven.start() returns, so it might as well get
-                # removed from the oven and its dependents made
-                # eligible.
-                #
-                # Rather than doing oven.wait_task(True, task), we
-                # actually do a (single) poll for every task in the
-                # oven. This is necessary to ensure that an important
-                # task such as glibc:do_configure doesn't lie around
-                # as a zombie while we do lots of do_fetch etc. - we
-                # want the glibc recipe to proceed as fast as
-                # possible, so that other recipes'
-                # do_stage,do_configure and so on become eligible.
-                oven.wait_all(True)
+
+                if pending.asyncX:
+                    t = pending.asyncX.peak()
+                    if oven.capacity >= t.weight:
+                        assert(t == pending.asyncX.pop())
+                        oven.start(t)
+                        if oven.wait_any(True):
+                            continue
+
+                while pending.async1 and oven.capacity > 0:
+                    t = pending.async1.pop()
+                    oven.start(t)
+                if oven.wait_all(True):
+                    continue
+
+                if pending.sync:
+                    t = pending.sync.pop()
+                    oven.start(t)
+                    oven.wait_all(True)
+                else:
+                    oven.wait_any(False)
+                continue
+
         finally:
             oven.wait_all(False)
 
