@@ -173,7 +173,7 @@ class TarFile(tarfile.TarFile):
 
 @oelite.profiling.profile_calls
 def extract_tarfile(filename):
-    with TarFile(filename, debug=0, errorlevel=1) as tf:
+    with TarFile.open(filename, mode="r|") as tf:
         tf.extractall()
 
 def progress_info(msg, total, current):
