@@ -79,9 +79,6 @@ class OEliteOven:
 
     def start(self, task):
         self.count += 1
-        debug("")
-        debug("Preparing %s"%(task))
-        task.prepare()
         info("%s started - %d / %d "%(task, self.count, self.total))
         task.build_started()
 
