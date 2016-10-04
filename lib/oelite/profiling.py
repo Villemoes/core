@@ -86,7 +86,6 @@ class Rusage:
         return y
 
     def print_delta(self):
-        self.compute_delta()
         with profile_output("rusage_delta.txt") as f:
             f.write("%s:\n" % self.name)
             for key, name, fmt in self.rusage_names:
@@ -98,9 +97,10 @@ class Rusage:
         for p in self.deferred:
             p.print_delta()
 
-    def __init__(self, name):
+    def __init__(self, name, print_walltime=True):
         self.name = name
         self.start()
+        self.print_walltime = print_walltime
 
     def start(self):
         self.before = self.current_rusage()
@@ -109,11 +109,14 @@ class Rusage:
     def end(self):
         oelite.util.stracehack("end:" + self.name)
         self.after = self.current_rusage()
+        self.compute_delta()
 
         if profiledir:
             self.print_delta()
         else:
             Rusage.deferred.append(self)
+        if self.print_walltime:
+            print "%s: %s" % (self.name, oelite.util.pretty_time(self.delta['wtime']))
 
     def __enter__(self):
         return self
@@ -137,7 +140,7 @@ def profile_rusage_delta(somefunc):
             lineno = str(inspect.getsourcelines(somefunc)[1])
         except:
             lineno = "?"
-        with Rusage("%s:%s:%s" % (srcfile, lineno, name)):
+        with Rusage("%s:%s:%s" % (srcfile, lineno, name), print_walltime=False):
             return somefunc(*args, **kwargs)
     return recorddelta
 
