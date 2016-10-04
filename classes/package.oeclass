@@ -40,6 +40,7 @@ def do_split(d):
         package_list.append(pkg)
 
     seen = set([])
+    created_dirs = set([])
 
     for pkg in package_list:
         root = os.path.join(pkgd, pkg)
@@ -76,7 +77,9 @@ def do_split(d):
                 continue
             fpath = os.path.join(root,file)
             dpath = os.path.dirname(fpath)
-            oelite.util.makedirs(dpath)
+            if not dpath in created_dirs:
+                oelite.util.makedirs(dpath)
+                created_dirs.add(dpath)
             ret = bb.utils.copyfile(file, fpath)
             if ret is False or ret == 0:
                 raise bb.build.FuncFailed("File population failed")
