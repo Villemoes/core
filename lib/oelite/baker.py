@@ -578,15 +578,20 @@ class OEliteBaker:
         # FIXME: add back support for options.fake_build
         rusage = oelite.profiling.Rusage("Build")
         exitcode = 0
-        pending = PriorityQueue(initial = self.runq.get_runabletasks(),
-                                key = lambda t: (-t.recipe.build_prio, t.recipe.remaining_tasks))
+        pending = PriorityQueue(key = lambda t: (-t.recipe.build_prio, t.recipe.remaining_tasks))
+
+        def update_pending(pending):
+            new_runable = self.runq.get_runabletasks()
+            for t in new_runable:
+                debug("")
+                debug("Preparing %s"%(t))
+                t.prepare()
+                pending.push(t)
 
         oven = OEliteOven(self)
         try:
             while oven.count < oven.total:
-                new_runable = self.runq.get_runabletasks()
-                for t in new_runable:
-                    pending.push(t)
+                update_pending(pending)
                 if not pending or oven.capacity <= 0:
                     # If we have no runable tasks and nothing in the
                     # oven, some tasks must have failed.
