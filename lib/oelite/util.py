@@ -5,6 +5,7 @@ import sys
 import subprocess
 import datetime
 
+from oelite.compat import dup_cloexec
 
 now = datetime.datetime.utcnow
 
@@ -68,9 +69,9 @@ def stracehack(msg):
 class StdioSaver:
     class Fds:
         def __init__(self):
-            self.stdin = os.dup(sys.stdin.fileno())
-            self.stdout = os.dup(sys.stdout.fileno())
-            self.stderr = os.dup(sys.stderr.fileno())
+            self.stdin = dup_cloexec(sys.stdin.fileno())
+            self.stdout = dup_cloexec(sys.stdout.fileno())
+            self.stderr = dup_cloexec(sys.stderr.fileno())
             self.refs = 1
 
         def get(self):
