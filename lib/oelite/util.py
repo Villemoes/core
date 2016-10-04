@@ -6,6 +6,8 @@ import subprocess
 import datetime
 
 
+now = datetime.datetime.utcnow
+
 def format_textblock(text, indent=2, width=78, first_indent=None):
     """
     Format a text block.
@@ -187,7 +189,7 @@ def pretty_time(delta):
 
 def timing_info(msg, start):
     msg += " time "
-    delta = (datetime.datetime.now() - start).total_seconds()
+    delta = (now() - start).total_seconds()
     msg += pretty_time(delta)
     info(msg)
     return
