@@ -134,10 +134,8 @@ def runstrip(file, d):
     # A working 'file' (one which works on the target architecture)
     # is necessary for this stuff to work, hence the addition to do_package[depends]
 
-    import commands, stat, re, oelite.magiccache
-
-    pathprefix = "export PATH=%s; " % bb.data.getVar('PATH', d, True)
-    print "pathprefix =",pathprefix
+    import stat, re, oelite.magiccache
+    import subprocess
 
     filemagic = oelite.magiccache.open()
     filetype = filemagic.file(file)
@@ -200,25 +198,23 @@ def runstrip(file, d):
     oelite.util.makedirs(os.path.join(os.path.dirname(file), ".debug"))
     debugfile=os.path.join(os.path.dirname(file), ".debug", os.path.basename(file))
 
-    stripcmd = "'%s' %s '%s'"                       % (strip, extraflags, file)
     objcpcmd = "'%s' --only-keep-debug '%s' '%s'"   % (objcopy, file, debugfile)
+    stripcmd = "'%s' %s '%s'"                       % (strip, extraflags, file)
     objlncmd = "'%s' --add-gnu-debuglink='%s' '%s'" % (objcopy, debugfile, file)
 
-    print "runstrip() %s"%(objcpcmd)
-    print "runstrip() %s"%(stripcmd)
-    print "runstrip() %s"%(objlncmd)
+    pathprefix = "export PATH=%s; " % bb.data.getVar('PATH', d, True)
+    print "pathprefix =",pathprefix
 
-    ret, result = commands.getstatusoutput("%s%s" % (pathprefix, objcpcmd))
-    if ret:
-        bb.note("runstrip() '%s' %s" % (objcpcmd,result))
+    cmd = pathprefix
+    cmd += "ret=0; set -x; "
+    for x in (objcpcmd, stripcmd, objlncmd):
+        cmd += x + " || ret=$?; "
+    cmd += "exit $ret"
 
-    ret, result = commands.getstatusoutput("%s%s" % (pathprefix, stripcmd))
-    if ret:
-        bb.note("runstrip() '%s' %s" % (stripcmd,result))
-
-    ret, result = commands.getstatusoutput("%s%s" % (pathprefix, objlncmd))
-    if ret:
-        bb.note("runstrip() '%s' %s" % (objlncmd,result))
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except subprocess.CalledProcessError as e:
+        bb.note("runstrip() exit code %d" % (e.returncode))
 
     if newmode:
         os.chmod(file, origmode)
