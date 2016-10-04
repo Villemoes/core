@@ -124,6 +124,7 @@ class OEliteTask:
     def prepare(self):
         meta = self.meta()
         self.weight = self.get_weight(meta)
+        self.function = meta.get_function(self.name)
 
         buildhash = self.cookbook.baker.runq.get_task_buildhash(self)
         debug("buildhash=%s"%(repr(buildhash)))
@@ -200,7 +201,6 @@ class OEliteTask:
 
     def prepare_context(self):
         meta = self.meta()
-        self.function = meta.get_function(self.name)
         self.do_cleandirs()
         self.cwd = self.do_dirs() or meta.get("B")
         self.stdin = open_cloexec("/dev/null", os.O_RDONLY)
