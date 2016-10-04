@@ -32,6 +32,9 @@ class OEliteFunction(object):
     def __repr__(self):
         return "OEliteFunction(%s)"%(self.var)
 
+    def is_async(self):
+        return False
+
     def run(self, cwd):
         self.start(cwd)
         return self.wait(False)
@@ -132,6 +135,9 @@ class ShellFunction(OEliteFunction):
         self.result = None
         super(ShellFunction, self).__init__(meta, var, name, tmpdir)
         return
+
+    def is_async(self):
+        return True
 
     def wait(self, poll):
         if self.result is not None:
