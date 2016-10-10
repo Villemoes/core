@@ -125,7 +125,7 @@ class OEliteTask:
         if os.path.exists(hashpath):
             os.remove(hashpath)
 
-
+    @oelite.profiling.profile_calls
     def prepare(self):
         meta = self.meta()
         self.weight = self.get_weight(meta)
@@ -135,6 +135,7 @@ class OEliteTask:
         debug("buildhash=%s"%(repr(buildhash)))
         meta.set("TASK_BUILDHASH", buildhash)
 
+        @oelite.profiling.profile_calls
         def prepare_stage(deptype):
             stage = {}
             recdepends = []
