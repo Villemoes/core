@@ -55,6 +55,10 @@ def add_bake_parser_options(parser):
                       action="store_true", default=False,
                       help="assume 'y' response to trivial questions")
 
+    parser.add_option("--dryrun",
+                      action="store_true", default=False,
+                      help="do recipe parsing, dependency resolving etc., but do not actually bake anything")
+
     parser.add_option("--rmwork",
                       action="store_true", default=None,
                       help="clean workdir for all recipes being built")
@@ -553,6 +557,10 @@ class OEliteBaker:
         print oelite.util.format_textblock(" ".join(text))
 
         self.cookbook.compute_recipe_build_priorities()
+
+        if self.options.dryrun:
+            print "Dryrun, not baking"
+            return 0
 
         if os.isatty(sys.stdin.fileno()) and not self.options.yes:
             while True:
