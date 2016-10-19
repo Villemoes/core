@@ -32,11 +32,10 @@ class DictMeta(MetaData):
 
 
     INDEXED_FLAGS = {
-        "python": 0,
-        "task": 1,
-        "autoimport": 2,
-        "precondition": 3,
-        "export": 4,
+        "task": 0,
+        "autoimport": 1,
+        "precondition": 2,
+        "export": 3,
     }
 
     OVERRIDE_TYPE = {
