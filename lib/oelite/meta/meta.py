@@ -487,12 +487,7 @@ class MetaData(MutableMapping):
                     continue
                 if self.get_flag(key, "nohash"):
                     continue
-                nohash_prefixed = False
-                for prefix in self.builtin_nohash_prefix:
-                    if key.startswith(prefix):
-                        nohash_prefixed = True
-                        break
-                if nohash_prefixed:
+                if any(key.startswith(prefix) for prefix in self.builtin_nohash_prefix):
                     continue
             self.dump_var(key, o, pretty, dynvars, flags, ignore_flags_re)
 
