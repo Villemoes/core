@@ -111,6 +111,14 @@ class OEliteBaker:
                 logging.getLogger().setLevel(logging.INFO)
 
         self.config = oelite.meta.DictMeta(meta=config)
+
+        # Remove variables which are irrelevant to baking and showing
+        # stuff. Getting rid of these early means we avoid allocating
+        # and copying several MB of memory when self.config gets
+        # inherited to layer, recipe and eventually task metadata.
+        self.config.del_var("__oestack")
+        self.config.del_var("__submodules")
+
         self.config["OE_IMPORTS"] = INITIAL_OE_IMPORTS
         self.config.import_env()
         os.environ.clear()
