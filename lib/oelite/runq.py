@@ -384,9 +384,7 @@ class OEliteRunQueue:
         package = self.get_provider(item)
         if not package:
             raise NoProvider(item)
-        recipe = self.cookbook.get_recipe(package=package)
-        assert(recipe is package.recipe)
-        return (recipe, package)
+        return (package.recipe, package)
 
     def _set_provider(self, item, package):
         t = (item.type, item.name, item.version)
