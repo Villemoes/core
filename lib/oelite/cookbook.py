@@ -449,16 +449,15 @@ class CookBook(Mapping):
         raise Exception(repr(task))
 
 
-    def get_task(self, id=None, recipe=None, name=None, cookbook=None):
-        tasks = self.get_tasks(id=id, recipe=recipe, name=name,
-                               cookbook=cookbook)
+    def get_task(self, id=None, recipe=None, name=None):
+        tasks = self.get_tasks(id=id, recipe=recipe, name=name)
         if len(tasks) == 0:
             return None
         elif len(tasks) > 1:
             raise MultipleTasks()
         return tasks[0]
 
-    def get_tasks(self, id=None, recipe=None, name=None, cookbook=None):
+    def get_tasks(self, id=None, recipe=None, name=None):
         if id is not None:
             if isinstance(id, int):
                 where = "id=%d"%(id)
