@@ -194,7 +194,6 @@ class OEliteTask:
                 continue
 
         self._meta = meta
-        meta.dump_types("%s_%s" % (str(self.recipe), self.name))
         return meta
 
     def prepare_context(self):
