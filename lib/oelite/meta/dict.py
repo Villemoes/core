@@ -542,3 +542,14 @@ class DictMeta(MetaData):
     def finalize(self):
         #warnings.warn("FIXME: implement DictMeta.finalize()")
         return
+
+    def dump_types(self, fn):
+        with oelite.profiling.profile_output(fn + ".smpl") as f:
+            for k,v in self.smpl.iteritems():
+                f.write("%s\t%s\n" % (k, type(v)))
+        with oelite.profiling.profile_output(fn + ".cplx") as f:
+            for k,v in self.cplx.iteritems():
+                for flag,val in v.iteritems():
+                    if flag == "":
+                        flag = '""'
+                    f.write("%s\t%s\t%s\n" % (k, flag, type(val)))
