@@ -121,8 +121,7 @@ class OEliteRunQueue:
             newtasks = set([])
             for task in addedtasks:
 
-                recipe = self.cookbook.get_recipe(task=task)
-                assert(recipe is task.recipe)
+                recipe = task.recipe
 
                 if task == primary_task or self.is_task_primary(task):
                     is_primary_task = True
@@ -176,8 +175,7 @@ class OEliteRunQueue:
         # DEPENDTYPE -> set of (task_id, package_id) tuples
         # or if flatten=True, just a set of task_id's
 
-        recipe = self.cookbook.get_recipe(task=task)
-        assert(recipe is task.recipe)
+        recipe = task.recipe
 
         # add recipe-internal task parents
         # (ie. addtask X before Y after Z)
