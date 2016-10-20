@@ -197,6 +197,7 @@ class OEliteTask:
         self.recipe.meta._fill_expand_cache()
         self._meta = self.recipe.meta.copy()
         self.filter_meta()
+        self._meta.dump_types("%s_%s" % (str(self.recipe), self.name))
         return self._meta
 
     def prepare_context(self):
