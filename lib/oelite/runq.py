@@ -122,6 +122,7 @@ class OEliteRunQueue:
             for task in addedtasks:
 
                 recipe = self.cookbook.get_recipe(task=task)
+                assert(recipe is task.recipe)
 
                 if task == primary_task or self.is_task_primary(task):
                     is_primary_task = True
@@ -176,6 +177,7 @@ class OEliteRunQueue:
         # or if flatten=True, just a set of task_id's
 
         recipe = self.cookbook.get_recipe(task=task)
+        assert(recipe is task.recipe)
 
         # add recipe-internal task parents
         # (ie. addtask X before Y after Z)
