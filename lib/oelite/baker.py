@@ -609,7 +609,7 @@ class OEliteBaker:
                 t.prepare()
                 pending.push(t)
 
-        oven = OEliteOven(self)
+        oven = OEliteOven(self, pending.__len__)
         try:
             while oven.count < oven.total:
                 update_pending(pending)
