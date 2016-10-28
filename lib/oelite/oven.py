@@ -25,7 +25,7 @@ import logging
 import time
 
 class OEliteOven:
-    def __init__(self, baker, capacity=None):
+    def __init__(self, baker, pending_count_cb, capacity=None):
         if capacity is None:
             pmake = baker.config.get("PARALLEL_MAKE")
             if pmake is None or pmake == "":
@@ -41,6 +41,31 @@ class OEliteOven:
         self.count = 0
         self.task_stat = dict()
         self.stdout_isatty = os.isatty(sys.stdout.fileno())
+
+        self.pending_count_cb = pending_count_cb
+        self.baking_started = oelite.util.now()
+        self.status_interval = 30 # a fine number pulled from my *rse
+        self.last_status = self.baking_started - self.status_interval # print status immediately
+
+    def maybe_print_status(self, force=False):
+        now = oelite.util.now()
+        if force or now - self.last_status >= self.status_interval:
+            headers = ("runtime", "done", "failed", "baking", "pending", "remaining", "total")
+            numbers = []
+            x = len(self.completed_tasks)
+            y = len(self.failed_tasks)
+
+            numbers.append("%7.0f s" % (now - self.baking_started))
+            numbers.append("%9d" % x)
+            numbers.append("%9d" % y)
+            numbers.append("%9d" % len(self))
+            numbers.append("%9d" % self.pending_count_cb())
+            numbers.append("%9d" % (self.total - (x+y)))
+            numbers.append("%9d" % self.total)
+
+            info(" | ".join(["%-9s" % h for h in headers]))
+            info(" | ".join(numbers))
+            self.last_status = now
 
     # The tasks which are currently baking are the keys in the
     # .starttime member. Implementing __contains__ makes sense of
@@ -80,7 +105,8 @@ class OEliteOven:
 
     def start(self, task):
         self.count += 1
-        info("%s started - %d / %d "%(task, self.count, self.total))
+        self.maybe_print_status()
+        info("%s started" % (task))
         task.build_started()
 
         self.add(task)
@@ -119,6 +145,7 @@ class OEliteOven:
         """
         if not poll and len(self) == 0:
             raise Exception("nothing in the oven, so you'd wait forever...")
+        self.maybe_print_status()
         tasks = self.currently_baking()
         if not poll and len(tasks) == 1:
             t = tasks[0]
@@ -155,6 +182,7 @@ class OEliteOven:
         for t in tasks:
             if self.wait_task(poll, t):
                 ret += 1
+        self.maybe_print_status()
         return ret
 
     def write_profiling_data(self):
@@ -169,4 +197,3 @@ class OEliteOven:
             for task in self.completed_tasks:
                 f.write("%s\t%.3f\t%.3f\t%.3f\t%.3f\n" %
                         (task, task.task_time, task.prefunc_time, task.func_time, task.postfunc_time))
-
