@@ -11,11 +11,15 @@ import types
 import os
 import oelite.profiling
 
-def deepcopy_str(x, memo):
-    return intern(x)
+import oelite.cext
+oelite.cext.compile_extension("meta/_copy.so", "meta/_copy.c")
 
-copy._deepcopy_dispatch[str] = deepcopy_str
-
+try:
+    from ._copy import deepcopy as fast_deepcopy
+    copy._deepcopy_fallback = copy.deepcopy
+    copy.deepcopy = fast_deepcopy
+except ImportError as e:
+    pass
 
 def unpickle(file):
     return DictMeta(meta=file)
