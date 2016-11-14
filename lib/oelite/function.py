@@ -68,6 +68,22 @@ class NoopFunction(OEliteFunction):
         self.result = True
 
 
+# Making a PythonFunction run asynchronously is not that easy:
+#
+# (1) we cannot use threads, since many of the functions
+# (e.g. do_fetch, do_unpack) expect to have a specific $CWD, and
+# that's a global resource in the process - those functions would fail
+# immediately when the main thread chdirs away.
+#
+# (2) we cannot just fork() and do everything in the child, since some
+# PythonFunctions really must mutate state in the main oe process
+# (most notably all hook functions that run during and immediately
+# after recipe parsing).
+#
+# (3) even if we do (2) on an opt-in basis, I'm not entirely convinced
+# we never rely on e.g. do_unpack changing that task's
+# metadata. Nevertheless, this is what we'll try to do.
+
 class PythonFunction(OEliteFunction):
 
     def __init__(self, meta, var, name=None, tmpdir=None, recursion_path=None,
