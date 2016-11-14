@@ -8,6 +8,7 @@ import shutil
 import warnings
 import re
 import subprocess
+import traceback
 
 class OEliteFunction(object):
 
@@ -123,13 +124,78 @@ class PythonFunction(OEliteFunction):
         if not self.async:
             self.result = self()
             return
-        raise NotImplementedError("async PythonFunction not implemented yet")
+        # prevent duplicate output from stdio buffers
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+        self.childpid = os.fork()
+        # This raise OSError on error, so there's no < 0 case to consider.
+        if self.childpid > 0:
+            # parent
+            return
+
+        # child
+
+        # If there's an exception, we want to get as much info as
+        # possible printed, not just the stringification of the
+        # exception object itself. The traceback module "exactly
+        # mimics the behavior of the Python interpreter when it prints
+        # a stack trace".
+
+        # We can only tell our parent how it went via our exit
+        # code. Important: We cannot call sys.exit(), since that is
+        # implemented by raising SystemExit, and we really must not
+        # return from this function - otherwise we go all the way back
+        # to the main loop in baker.py, get caught by the try-finally
+        # block, which then triggers the "wait for remaining tasks"
+        # logic, and we fail miserably since we do not have the child
+        # being waited for (that's us!). So we use
+        # os._exit(). However, we then need to ensure proper buffer
+        # flushing etc. manually.
+        exitcode = 0
+        try:
+            ret = self()
+            if not ret:
+                exitcode = 1
+        except:
+            traceback.print_exc()
+            exitcode = 2
+        # We don't want any silly error during what should be the
+        # proper way to shutdown manually to interfere with the exit
+        # code.
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+            # What else do we need to do?
+        finally:
+            os._exit(exitcode)
+        assert(0) # not reached
 
     def wait(self, poll=False):
         if not self.async:
             assert(self.result is True or self.result is False)
             return self.result
-        raise NotImplementedError("async PythonFunction not implemented yet")
+
+        flags = 0
+        if poll:
+            flags = os.WNOHANG
+
+        pid, status = os.waitpid(self.childpid, flags)
+        if not pid:
+            # This should only happen if we passed WNOHANG.
+            assert(poll)
+            return None
+
+        assert(pid == self.childpid)
+        if os.WIFEXITED(status):
+            if os.WEXITSTATUS(status) == 0:
+                return True
+            print "forked python process exited with status %d" % os.WEXITSTATUS(status)
+        elif os.WIFSIGNALED(status):
+            print "forked python process killed from signal %d" % os.WTERMSIG(status)
+        else:
+            print "forked python process died for unknown reason (%d)" % status
+        return False
 
     def __call__(self):
 
