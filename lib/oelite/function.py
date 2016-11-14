@@ -118,6 +118,12 @@ class PythonFunction(OEliteFunction):
         super(PythonFunction, self).__init__(meta, var, name, tmpdir)
         return
 
+    def _start(self):
+        self.result = self()
+
+    def wait(self, poll=False):
+        return self.result
+
     def __call__(self):
 
         if self.set_os_environ:
