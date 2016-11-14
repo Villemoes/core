@@ -115,14 +115,21 @@ class PythonFunction(OEliteFunction):
         self.function = l[var]
         self.set_os_environ = set_os_environ
         self.result = False
+        self.async = bool(int(meta.get_flag(var, "__async", expand=oelite.meta.CLEAN_EXPANSION) or 0))
         super(PythonFunction, self).__init__(meta, var, name, tmpdir)
         return
 
     def _start(self):
-        self.result = self()
+        if not self.async:
+            self.result = self()
+            return
+        raise NotImplementedError("async PythonFunction not implemented yet")
 
     def wait(self, poll=False):
-        return self.result
+        if not self.async:
+            assert(self.result is True or self.result is False)
+            return self.result
+        raise NotImplementedError("async PythonFunction not implemented yet")
 
     def __call__(self):
 
