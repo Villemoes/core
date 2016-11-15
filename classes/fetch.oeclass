@@ -65,6 +65,7 @@ def fetch_init(d):
 
 do_fetch[dirs] = "${INGREDIENTS}"
 
+do_fetch[__async] = "${__ASYNC_FETCH}"
 def do_fetch(d):
     sigfile_changed = False
     for uri in d.get("__fetch"):
@@ -91,6 +92,7 @@ def do_fetch(d):
 do_unpack[dirs] = "${SRCDIR}"
 do_unpack[cleandirs] = "${SRCDIR}"
 
+do_unpack[__async] = "${__ASYNC_UNPACK}"
 def do_unpack(d):
     for uri in d.get("__fetch"):
         if "unpack" in uri.params:

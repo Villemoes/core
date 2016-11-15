@@ -17,6 +17,7 @@ do_split[dirs] = "${PKGD} ${D}"
 # The FILES_* and ALLOW_EMPTY_* variables are exclusive for do_split task
 META_EMIT_PREFIX += "split:FILES_${PN} split:ALLOW_EMPTY"
 
+do_split[__async] = "${__ASYNC_SPLIT}"
 def do_split(d):
     import errno, stat
 
@@ -151,6 +152,7 @@ LICENSE[emit]		= "do_package"
 HOMEPAGE[emit]		= "do_package"
 MAINTAINER[emit]	= "do_package"
 
+do_package[__async] = "${__ASYNC_PACKAGE}"
 def do_package(d):
     import bb, os
 

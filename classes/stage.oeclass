@@ -15,6 +15,7 @@ do_stage[dirs]		= "${STAGE_DIR}"
 do_stage[recdeptask]	= "DEPENDS:do_package"
 
 do_stage[import] = "set_stage"
+do_stage[__async] = "${__ASYNC_STAGE}"
 def do_stage(d):
     def get_dstdir(cwd, package):
         return os.path.join(cwd, package.type)
