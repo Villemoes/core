@@ -36,6 +36,7 @@ CHRPATH_REPLACE_STAGEDIRS:cross		= "1"
 CHRPATH_REPLACE_STAGEDIRS:sdk-cross	= "1"
 
 do_chrpath[dirs] = "${D}"
+do_chrpath[__async] = "${__ASYNC_CHRPATH}"
 def do_chrpath(d):
     import stat
     import oelite.magiccache
