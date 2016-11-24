@@ -124,5 +124,13 @@ class LockFile(object):
         self.unlock()
         self.close()
 
+    def shared(self):
+        self.default_flags = LOCK_SH
+        return self
+
+    def exclusive(self):
+        self.default_flags = LOCK_EX
+        return self
+
 if __name__ == "__main__":
     pass
