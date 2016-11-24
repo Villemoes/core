@@ -125,9 +125,10 @@ class LockFile(object):
                 except OSError as e:
                     if e.errno == errno.EINTR:
                         if expired:
-                            raise _oserror(errno.ETIMEDOUT, "timeout waiting for lock")
+                            break
                         continue
                     raise
+        raise _oserror(errno.ETIMEDOUT, "timeout waiting for lock")
 
     def lock(self, flags = None, timeout = None):
         # flock(2) allows changing the lock type held, but it is not
