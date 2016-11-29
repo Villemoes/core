@@ -69,18 +69,22 @@ class LockFile(object):
         # can't otherwise specify the type of lock we want.
         self.flags = flags
         self.fd = -1
+        self.close_on_unlock = False
+        self.has_lock = False
 
     def open(self):
         # Create the file if it doesn't exist, don't accept symlinks,
         flags = os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW
         mode = 0o644
+        assert(self.fd == -1)
         self.fd = open_cloexec(self.name, flags, mode)
 
     def close(self):
+        assert(self.fd >= 0)
         os.close(self.fd)
         self.fd = -1
 
-    def lock(self, flags = None, timeout = None):
+    def do_lock(self, flags = None, timeout = None):
         if flags is None:
             flags = self.flags
         # flags must be LOCK_SH or LOCK_EX, possibly ORed with LOCK_NB.
@@ -89,6 +93,8 @@ class LockFile(object):
 
         if timeout is not None and timeout <= 0:
             flags |= LOCK_NB
+
+        assert(self.fd >= 0)
 
         # If the caller requested a non-blocking operation, or
         # requested an infinitely-blocking operation (by not passing a
@@ -119,16 +125,44 @@ class LockFile(object):
                         continue
                     raise
 
+    def lock(self, flags = None, timeout = None):
+        # flock(2) allows changing the lock type held, but it is not
+        # guaranteed to happen atomically - e.g., if one holds an
+        # exclusive lock, one isn't guaranteed that downgrading to a
+        # shared lock won't block. So to simplify maintaining our view
+        # of the world, we explicitly unlock and then lock. Note that
+        # this means that if the caller passes LOCK_NB or a timeout,
+        # the caller may lose a lock he used to hold.
+        if self.has_lock:
+            self.unlock()
+
+        if self.fd == -1:
+            self.open()
+            self.close_on_unlock = True
+        else:
+            self.close_on_unlock = False
+
+        try:
+            self.do_lock(flags, timeout)
+            self.has_lock = True
+        except:
+            if self.close_on_unlock:
+                self.close()
+            raise
+
     def unlock(self):
-        return flock(self.fd, LOCK_UN)
+        if not self.has_lock:
+            return # or raise? or let the flock call raise?
+        flock(self.fd, LOCK_UN)
+        self.has_lock = False
+        if self.close_on_unlock:
+            self.close()
 
     def __enter__(self):
-        self.open()
         return self.lock() # returns None or raises exception
 
     def __exit__(self):
         self.unlock()
-        self.close()
 
     def shared(self):
         self.flags = LOCK_SH
