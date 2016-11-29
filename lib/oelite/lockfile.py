@@ -72,6 +72,10 @@ class LockFile(object):
         self.close_on_unlock = False
         self.has_lock = False
 
+    def __del__(self):
+        if self.fd >= 0:
+            self.close()
+
     def open(self):
         # Create the file if it doesn't exist, don't accept symlinks,
         flags = os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW
