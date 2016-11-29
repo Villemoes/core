@@ -63,11 +63,11 @@ class Timeout(object):
 
 # Even if we create the file during open(), we never attempt to unlink the file.
 class LockFile(object):
-    def __init__(self, name, default_flags = LOCK_EX):
+    def __init__(self, name, flags = LOCK_EX):
         self.name = name
-        # The default_flags is for use in a with statement, where we
+        # The flags is for use in a with statement, where we
         # can't otherwise specify the type of lock we want.
-        self.default_flags = default_flags
+        self.flags = flags
         self.fd = -1
 
     def open(self):
@@ -82,7 +82,7 @@ class LockFile(object):
 
     def lock(self, flags = None, timeout = None):
         if flags is None:
-            flags = default_flags
+            flags = self.flags
         # flags must be LOCK_SH or LOCK_EX, possibly ORed with LOCK_NB.
         if not (flags & ~LOCK_NB) in (LOCK_SH, LOCK_EX):
             raise _oserror(errno.EINVAL, "invalid flags")
@@ -131,11 +131,11 @@ class LockFile(object):
         self.close()
 
     def shared(self):
-        self.default_flags = LOCK_SH
+        self.flags = LOCK_SH
         return self
 
     def exclusive(self):
-        self.default_flags = LOCK_EX
+        self.flags = LOCK_EX
         return self
 
 if __name__ == "__main__":
