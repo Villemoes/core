@@ -24,10 +24,16 @@ def _oserror(err, txt):
 # We do not attempt to restore the old value of the ITIMER_REAL
 # timer. Also, nesting these is obviously meaningless; only use them
 # for wrapping a single system call.
+#
+# Finally, in Python, only the main thread can receive and handle a
+# signal, so this doesn't mix well with threads. Fortunately, Python
+# also enforces that only the main thread may call signal.signal, so
+# if any non-main thread ever calls the __enter__ method it will get
+# an exception, and thus never enter the with block.
 class Timeout(object):
     def __init__(self, timeout):
         self.timeout = timeout
-        
+
     def handler(self, signum, frame):
         self.expired = True
 
