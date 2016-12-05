@@ -1,4 +1,3 @@
-#!/usr/bin/python
 import os
 import fcntl
 import ctypes
@@ -48,6 +47,12 @@ def test_dup_cloexec():
     assert(has_cloexec(fd))
     os.close(fd)
 
+# To run the tests, go to meta/core/lib, then execute
+#
+#   python -m oelite.compat
+#
+# It must be done that way to avoid "ValueError: Attempted relative
+# import in non-package".
 
 if __name__ == "__main__":
     test_open_cloexec()
