@@ -62,13 +62,12 @@ def do_split(d):
                     continue
             globbed = glob.glob(file)
             if globbed:
-                if [ file ] != globbed:
-                    if not file in globbed:
-                        files += globbed
-                        continue
-                    else:
-                        globbed.remove(file)
-                        files += globbed
+                if not file in globbed:
+                    files += globbed
+                    continue
+                else:
+                    globbed.remove(file)
+                    files += globbed
             if (not fstat.islink()) and (not fstat.exists()):
                 continue
             if file in seen:
