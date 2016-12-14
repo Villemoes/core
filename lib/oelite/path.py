@@ -28,6 +28,8 @@ def which(path, filename, pathsep=os.pathsep):
     return '' # TODO: change to None, and fixup the breakage it causes
 
 class StatCache:
+    """Lazy and caching os.[l]stat wrapper."""
+
     def __init__(self, fn):
         self.fn = fn
         self._lstat = None
