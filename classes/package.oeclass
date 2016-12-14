@@ -50,6 +50,11 @@ def do_split(d):
             if os.path.isabs(file):
                 file = "." + file
             fstat = oelite.path.statcache(file)
+            # If file is a directory, add its contents to the list of
+            # files. If the directory is empty, fall through and
+            # create the corresponding empty directory in pkgd/pkg,
+            # otherwise it will automatically be created when we
+            # process the list we just appended to files.
             if not fstat.islink() and fstat.isdir():
                 newfiles =  [os.path.join(file,x) for x in os.listdir(file)]
                 if newfiles:
