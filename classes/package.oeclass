@@ -45,7 +45,8 @@ def do_split(d):
         oelite.util.makedirs(root)
 
         files = (d.get("FILES_" + pkg) or "").split()
-        for file in files:
+        while files:
+            file = files.pop()
             if os.path.isabs(file):
                 file = "." + file
             if not os.path.islink(file):
