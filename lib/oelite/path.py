@@ -85,3 +85,49 @@ class StatCache:
 
 def statcache(fn):
     return StatCache(fn)
+
+def copy_dentry(src, dst, sstat = None):
+    """Make dst a copy of src. Symbolic links are created with the same
+    contents, directories with the same permissions, and regular files
+    are hard linked, thus preserving all attributes. It is up to the
+    caller to ensure that os.path.dirname(dst) exists and that dst
+    doesn't.
+
+    """
+    from stat import *
+    import errno
+    import shutil
+    
+    if sstat is None:
+        sstat = os.lstat(src)
+
+    if S_ISLNK(sstat):
+        target = os.readlink(src)
+        os.symlink(target, dst)
+        return True
+    
+    if S_ISDIR(sstat):
+        os.mkdir(dst)
+        os.chmod(dst, sstat.st_mode)
+        return True
+
+    if S_ISREG(sstat):
+        try:
+            os.link(src, dst)
+            return True
+        except OSError as e:
+            # We may encounter EPERM if we're on a non-posix compliant
+            # file system, and EMLINK in some extremely weird case
+            # otherwise. Try to fall back to a regular copy.
+            if e.errno in (errno.EMLINK, errno.EPERM):
+                # XXX: We should probably log this, since it really shouldn't happen.
+                pass
+            raise
+        shutil.copyfile(src, dst)
+        os.chmod(dst, sstat.st_mode)
+        return True
+
+    # We probably don't need to handle S_ISBLK, S_ISCHR, S_ISFIFO,
+    # S_ISSOCK. We should probably scream loudly if we reach this
+    # point.
+    return False
