@@ -1,5 +1,7 @@
 import os
 from stat import *
+import errno
+import shutil
 
 TOPDIR = os.getcwd()
 
@@ -97,9 +99,6 @@ def copy_dentry(src, dst, recursive = False, hardlink = True):
     [src] if src is a directory and recursive is True).
 
     """
-    from stat import *
-    import errno
-    import shutil
 
     sstat = os.lstat(src)
 
