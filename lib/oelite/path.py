@@ -86,48 +86,68 @@ class StatCache:
 def statcache(fn):
     return StatCache(fn)
 
-def copy_dentry(src, dst, sstat = None):
+def copy_dentry(src, dst, recursive = False, hardlink = True):
     """Make dst a copy of src. Symbolic links are created with the same
     contents, directories with the same permissions, and regular files
     are hard linked, thus preserving all attributes. It is up to the
     caller to ensure that os.path.dirname(dst) exists and that dst
     doesn't.
 
+    Returns list of source dentries copied (which may be more than
+    [src] if src is a directory and recursive is True).
+
     """
     from stat import *
     import errno
     import shutil
-    
-    if sstat is None:
-        sstat = os.lstat(src)
 
-    if S_ISLNK(sstat):
-        target = os.readlink(src)
-        os.symlink(target, dst)
-        return True
-    
+    sstat = os.lstat(src)
+
+    ret = [src]
     if S_ISDIR(sstat):
         os.mkdir(dst)
         os.chmod(dst, sstat.st_mode)
-        return True
+        # This assumes the caller doesn't try something stupid such as
+        # copying a directory tree into itself.
+        if recursive:
+            for x in os.listdir(src):
+                ret += copy_dentry(os.path.join(src, x),
+                                   os.path.join(dst, x),
+                                   recursive = True,
+                                   hardlink = hardlink)
 
-    if S_ISREG(sstat):
-        try:
-            os.link(src, dst)
-            return True
-        except OSError as e:
-            # We may encounter EPERM if we're on a non-posix compliant
-            # file system, and EMLINK in some extremely weird case
-            # otherwise. Try to fall back to a regular copy.
-            if e.errno in (errno.EMLINK, errno.EPERM):
-                # XXX: We should probably log this, since it really shouldn't happen.
-                pass
-            raise
-        shutil.copyfile(src, dst)
+    elif S_ISREG(sstat):
+        do_fallback = True
+        if hardlink:
+            try:
+                os.link(src, dst)
+                do_fallback = False
+            except OSError as e:
+                # We may encounter EPERM if we're on a non-posix
+                # compliant file system, and EMLINK in some extremely
+                # weird case otherwise (I don't think there's any
+                # hardlink-allowing filesystem that has _PC_LINK_MAX
+                # less than 126). In those cases, fall through to a
+                # regular copy.
+                if e.errno not in (errno.EMLINK, errno.EPERM):
+                    raise
+        if do_fallback:
+            shutil.copyfile(src, dst)
+            os.chmod(dst, sstat.st_mode)
+
+    elif S_ISLNK(sstat):
+        target = os.readlink(src)
+        os.symlink(target, dst)
+
+    # We probably don't really need to handle S_ISBLK, S_ISCHR,
+    # S_ISFIFO, S_ISSOCK, and even if we try, we'll probably fail with
+    # EPERM. Anyway, for completeness:
+    elif S_ISBLK(sstat) or S_ISCHR(sstat) or S_ISFIFO(sstat) or S_ISSOCK(sstat):
+        # mknod ignores the device arg for FIFO and SOCK
+        os.mknod(dst, S_IFMT(sstat) | S_IMODE(sstat), sstat.st_rdev)
         os.chmod(dst, sstat.st_mode)
-        return True
 
-    # We probably don't need to handle S_ISBLK, S_ISCHR, S_ISFIFO,
-    # S_ISSOCK. We should probably scream loudly if we reach this
-    # point.
-    return False
+    else:
+        raise OSError(errno.EINVAL, "unknown file type %08o" % sstat.st_mode, src)
+
+    return ret
