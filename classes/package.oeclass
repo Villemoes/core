@@ -49,6 +49,31 @@ def do_split(d):
             file = files.pop()
             if os.path.isabs(file):
                 file = "." + file
+
+            globbed = glob.glob(file)
+            if globbed:
+                if not file in globbed:
+                    files += globbed
+                    continue
+                else:
+                    globbed.remove(file)
+                    files += globbed
+            else:
+                continue
+
+            # Normalize the path, stripping trailing slashes. We
+            # didn't do that before globbing, because if the pattern
+            # ends with a slash, it is only meant to match a
+            # directory. But we do it now, because otherwise
+            # os.path.dirname() below gives the entire path, so that
+            # the makedirs() ends up having already created the leaf
+            # directory, and copy_dentry fails since dst already
+            # exists.
+            file = file.rstrip("/")
+            if file in seen:
+                continue
+            seen.add(file)
+
             fstat = oelite.path.statcache(file)
             # If file is a directory, add its contents to the list of
             # files. If the directory is empty, fall through and
@@ -60,20 +85,6 @@ def do_split(d):
                 if newfiles:
                     files += newfiles
                     continue
-            globbed = glob.glob(file)
-            if globbed:
-                if not file in globbed:
-                    files += globbed
-                    continue
-                else:
-                    globbed.remove(file)
-                    files += globbed
-            # If file truly doesn't exist (not even as a broken symlink), carry on.
-            if not fstat.lexists():
-                continue
-            if file in seen:
-                continue
-            seen.add(file)
 
             dst = os.path.join(root, file)
             dstdir = os.path.dirname(dst)

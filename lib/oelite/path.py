@@ -101,11 +101,12 @@ def copy_dentry(src, dst, recursive = False, hardlink = True):
     """
 
     sstat = os.lstat(src)
-
+    mode = sstat.st_mode
+    
     ret = [src]
-    if S_ISDIR(sstat):
+    if S_ISDIR(mode):
         os.mkdir(dst)
-        os.chmod(dst, sstat.st_mode)
+        os.chmod(dst, mode)
         # This assumes the caller doesn't try something stupid such as
         # copying a directory tree into itself.
         if recursive:
@@ -115,7 +116,7 @@ def copy_dentry(src, dst, recursive = False, hardlink = True):
                                    recursive = True,
                                    hardlink = hardlink)
 
-    elif S_ISREG(sstat):
+    elif S_ISREG(mode):
         do_fallback = True
         if hardlink:
             try:
@@ -132,21 +133,21 @@ def copy_dentry(src, dst, recursive = False, hardlink = True):
                     raise
         if do_fallback:
             shutil.copyfile(src, dst)
-            os.chmod(dst, sstat.st_mode)
+            os.chmod(dst, mode)
 
-    elif S_ISLNK(sstat):
+    elif S_ISLNK(mode):
         target = os.readlink(src)
         os.symlink(target, dst)
 
     # We probably don't really need to handle S_ISBLK, S_ISCHR,
     # S_ISFIFO, S_ISSOCK, and even if we try, we'll probably fail with
     # EPERM. Anyway, for completeness:
-    elif S_ISBLK(sstat) or S_ISCHR(sstat) or S_ISFIFO(sstat) or S_ISSOCK(sstat):
+    elif S_ISBLK(mode) or S_ISCHR(mode) or S_ISFIFO(mode) or S_ISSOCK(mode):
         # mknod ignores the device arg for FIFO and SOCK
-        os.mknod(dst, S_IFMT(sstat) | S_IMODE(sstat), sstat.st_rdev)
-        os.chmod(dst, sstat.st_mode)
+        os.mknod(dst, S_IFMT(mode) | S_IMODE(mode), sstat.st_rdev)
+        os.chmod(dst, mode)
 
     else:
-        raise OSError(errno.EINVAL, "unknown file type %08o" % sstat.st_mode, src)
+        raise OSError(errno.EINVAL, "unknown file type %08o" % mode, src)
 
     return ret
