@@ -74,16 +74,13 @@ def do_split(d):
             if file in seen:
                 continue
             seen.add(file)
-            if fstat.isdir() and not fstat.islink():
-                oelite.util.makedirs(os.path.join(root,file))
-                os.chmod(os.path.join(root,file), fstat.stat().st_mode)
-                continue
-            fpath = os.path.join(root,file)
-            dpath = os.path.dirname(fpath)
-            oelite.util.makedirs(dpath)
-            ret = bb.utils.copyfile(file, fpath)
-            if ret is False or ret == 0:
-                raise bb.build.FuncFailed("File population failed")
+
+            dst = os.path.join(root, file)
+            dstdir = os.path.dirname(dst)
+            oelite.util.makedirs(dstdir)
+
+            ret = oelite.path.copy_dentry(file, dst)
+            assert(ret == [file])
 
     unshipped = []
     for root, dirs, files in os.walk(ddir + "/"):
