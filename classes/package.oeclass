@@ -68,7 +68,8 @@ def do_split(d):
                 else:
                     globbed.remove(file)
                     files += globbed
-            if (not fstat.islink()) and (not fstat.exists()):
+            # If file truly doesn't exist (not even as a broken symlink), carry on.
+            if not fstat.lexists():
                 continue
             if file in seen:
                 continue
