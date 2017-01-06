@@ -130,6 +130,7 @@ class OEliteRecipe:
         if not self.rmwork:
             return
 
+        print "doing rmwork %s" % self
         workdir = self.meta.get("WORKDIR")
         if not workdir:
             print "ERROR: rmwork %s: WORKDIR not set" % self
