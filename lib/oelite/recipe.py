@@ -42,7 +42,7 @@ class OEliteRecipe:
         self.tasks = set([])
         self.item_deps = {}
         for deptype in ("DEPENDS", "RDEPENDS", "FDEPENDS"):
-            # (type, itemname) => version
+            # set of OEliteItems (in practice, (type, itemname, version) triples)
             self.item_deps[deptype] = set()
         return
 
