@@ -42,7 +42,7 @@ import sys
 # (http://bugs.python.org/issue29019) means that fromkeys() also
 # accounts for deleted entries in the passed-in dict when sizing, so
 # we have to do a little extra dance to ensure we pass a dict without
-# deleted entries.
+# deleted entries (hence the iterated dict.fromkeys() calls below).
 
 if sys.version_info >= (2, 7, 10):
     def _use_dict_copy(d):
