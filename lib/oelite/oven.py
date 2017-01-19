@@ -34,7 +34,7 @@ class OEliteOven:
                 capacity = int(pmake.replace("-j", "")) + 2
         self.capacity = capacity
         self.baker = baker
-        self.starttime = dict()
+        self.current_tasks = set()
         self.completed_tasks = []
         self.failed_tasks = []
         self.total = baker.runq.number_of_tasks_to_build()
@@ -43,18 +43,18 @@ class OEliteOven:
         self.stdout_isatty = os.isatty(sys.stdout.fileno())
 
     # The tasks which are currently baking are the keys in the
-    # .starttime member. Implementing __contains__ makes sense of
+    # .current_tasks member. Implementing __contains__ makes sense of
     # "task in oven".
     def __contains__(self, x):
-        return x in self.starttime
+        return x in self.current_tasks
 
     # Allow "for t in oven:"
     def __iter__(self):
-        return iter(self.starttime)
+        return iter(self.current_tasks)
 
     # Size of oven == number of currently baking tasks.
     def __len__(self):
-        return len(self.starttime)
+        return len(self.current_tasks)
 
     def currently_baking(self):
         return list(self)
@@ -67,16 +67,14 @@ class OEliteOven:
         stat.append(delta)
 
     def add(self, task):
+        self.current_tasks.add(task)
         self.capacity -= task.weight
-        self.starttime[task] = oelite.util.now()
+        task.oven_start = oelite.util.now()
 
     def remove(self, task):
-        now = oelite.util.now()
-        delta = now - self.starttime[task]
-        del self.starttime[task]
+        self.current_tasks.remove(task)
         self.capacity += task.weight
-        self.update_task_stat(task, delta)
-        return delta
+        task.oven_stop = oelite.util.now()
 
     def start(self, task):
         self.count += 1
@@ -99,8 +97,10 @@ class OEliteOven:
         result = task.wait(poll)
         if result is None:
             return None
-        delta = self.remove(task)
-        task.task_time = delta
+        self.remove(task)
+        delta = task.oven_stop - task.oven_start
+        task.oven_time = delta
+        self.update_task_stat(task, delta)
 
         task.recipe.remaining_tasks -= 1
         if result:
@@ -127,9 +127,9 @@ class OEliteOven:
             t = tasks[0]
             if self.stdout_isatty:
                 now = oelite.util.now()
-                info("waiting for %s (started %.3f seconds ago) to finish" % (t, now-self.starttime[t]))
+                info("waiting for %s (started %.3f seconds ago) to finish" % (t, now - t.oven_start))
             return self.wait_task(False, t)
-        tasks.sort(key=lambda t: self.starttime[t])
+        tasks.sort(key=lambda t: t.oven_start)
         i = 0
         while True:
             for t in tasks:
@@ -143,7 +143,7 @@ class OEliteOven:
                 info("waiting for any of these to finish:")
                 now = oelite.util.now()
                 for t in tasks:
-                    info("  %-40s started %.3f seconds ago" % (t, now-self.starttime[t]))
+                    info("  %-40s started %.3f seconds ago" % (t, now - t.oven_start))
             time.sleep(0.1)
         return None
 
@@ -154,7 +154,7 @@ class OEliteOven:
 
         """
         tasks = self.currently_baking()
-        tasks.sort(key=lambda t: self.starttime[t])
+        tasks.sort(key=lambda t: t.oven_start)
         for t in tasks:
             self.wait_task(poll, t)
 
@@ -168,6 +168,7 @@ class OEliteOven:
 
         with oelite.profiling.profile_output("task_times.txt") as f:
             for task in self.completed_tasks:
-                f.write("%s\t%.3f\t%.3f\t%.3f\t%.3f\n" %
-                        (task, task.task_time, task.prefunc_time, task.func_time, task.postfunc_time))
+                f.write("%s\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n" %
+                        (task, task.oven_start, task.oven_stop, task.oven_time,
+                         task.prefunc_time, task.func_time, task.postfunc_time))
 
