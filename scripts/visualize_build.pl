@@ -6,24 +6,41 @@ use warnings;
 
 use List::Util qw(min max);
 use List::MoreUtils qw(any);
+use Getopt::Long;
 
-my %defaults = (
-		tick => 1.0,
-		min_time => 0.5,
-		ignore => [qw(fstage build)],
-	       );
+my %short_type = ( machine          => 'm',
+		   native           => 'n',
+		   cross            => 'c',
+		   sdk              => 's',
+		   'sdk-cross'      => 'S',
+		   'canadian-cross' => 'C');
 
-my $tick;
-my $min_time;
-my @ignore;
+my @common_tasks = qw(stage fstage fetch unpack patch configure
+compile install chrpath split package build);
 
+
+my $max_task_width = max(map {length} @common_tasks);
+my $max_recipe_width = 30 - $max_task_width - length("X Y:: ");
+my $frame_width = 60; # assumed to be even
+my $half_frame_width = int($frame_width/2);
+
+my $tick = 1.0;
+my $min_time = 0.5;
+my @ignore = qw(fstage build);
+my @ignore_opt;
+
+GetOptions("tick=f" => \$tick,
+	   "min-time=f" => \$min_time,
+	   "ignore=s" => \@ignore_opt,
+    ) or die "Option error";
 # --ignore somenoneexistingtaskname can be used to effectively ignore
 # nothing (one may want to spell it --ignore none).
 
-$tick //= $defaults{tick};
-$min_time //= $defaults{min_time};
-@ignore = @{$defaults{ignore}} unless @ignore;
+@ignore = @ignore_opt if @ignore_opt;
+@ignore = split(/,/, join(',', @ignore));
 @ignore = map { s/^do_// } @ignore;
+
+
 
 # Try not to recycle a symbol too soon. If we ever have more than 52
 # simultaneous tasks, we'll use the same symbol for two things at the
@@ -48,10 +65,13 @@ sub read_data {
 	chomp;
 	my ($id, $start, $stop, undef) = split;
 	my ($type, $recipe, $task) = split /:/, $id;
+	$type = $short_type{$type} // '?';
 	$task =~ s/^do_//;
-	my $name = "${type}:${recipe}:${task}"; # All that? Hmm...
 	next if any { $_ eq $task } @ignore;
 	next if ($stop - $start) < $min_time;
+	$recipe = abbrev($recipe, $max_recipe_width);
+	$task = abbrev($task, $max_task_width);
+	my $name = "${type}:${recipe}:${task}"; # All that? Hmm...
 	$offset = min($offset, $start, $stop);
 	die "duplicate task $id" if exists $tasks{$id};
 	$tasks{$id} = {id => $id, name => $name, start => $start, stop => $stop};
@@ -99,10 +119,11 @@ my @frames; # the symbols should be written to the frames
 # which its [start, stop] interval overlaps at least half the time
 # that pixel represents.
 sub get_level {
-    my $first = shift;
-    my $lvl = 0;
-    $lvl++ while (defined $levels[$lvl][$first]);
-    return $lvl;
+    my $start = shift;
+    for (my $lvl = 0; $lvl < @levels; ++$lvl) {
+	return $lvl if $levels[$lvl] < $start;
+    }
+    return scalar @levels;
 }
 
 for my $event (@events) {
@@ -110,11 +131,31 @@ for my $event (@events) {
     if ($event->{type} eq 'start') {
 	my $symbol = get_symbol();
 	$task->{symbol} = $symbol;
-	my $lvl = get_level($task->{first});
+	my $lvl = get_level($task->{start});
 	$task->{level} = $lvl;
-	$levels[$lvl][$_] = $symbol for ($task->{first}..$task->{last});
+	$levels[$lvl] = $task->{stop};
+
+	for (my $fi = frame_idx($task->{first}); $fi <= frame_idx($task->{last}); ++$fi) {
+	    my $frame = $frames[$fi];
+	    if (not defined $frame) {
+		$frames[$fi] = $frame = { left => $fi*$frame_width,
+					  right => ($fi+1)*$frame_width,
+					  tasks => [],
+					  pixels => [],
+		};
+	    }
+	    push @{$frame->{tasks}}, $task;
+	    $frame->{pixels}[$lvl] //= ' 'x$frame_width;
+	    my $l = max($frame->{left}, $task->{first});
+	    # ->last is inclusive, ->right and r are exclusive
+	    my $r = min($frame->{right}, $task->{last}+1);
+	    substr($frame->{pixels}[$lvl], $l-$frame->{left}, $r-$l) = 
+		$task->{symbol} x ($r-$l);
+	}
+	# $levels[$lvl][$_] = $symbol for ($task->{first}..$task->{last});
 	$current{$task->{id}} = $task;
-	printf "%s\t%s\n", $symbol, $task->{name};
+	printf "%s\t%s\t%.2f\t%.2f\t%d\t%d\n", $symbol, $task->{name}, $task->{start}, $task->{stop},
+$task->{first}, $task->{last};
     } elsif ($event->{type} eq 'stop') {
 	my $id = $task->{id};
 	die "task $id not in current" unless exists $current{$id};
@@ -125,9 +166,40 @@ for my $event (@events) {
     }
 }
 
-for my $lvl (0..$#levels) {
-    for my $i (0..$#{$levels[$lvl]}) {
-	print ($levels[$lvl][$i] // ' ');
+for my $f (@frames) {
+    my $header = ' 'x$frame_width;
+    $header = insert_number($header, $f->{left}, 0);
+    $header = insert_number($header, $f->{right}, $frame_width);
+    $header = insert_number($header, int(($f->{left}+$f->{right})/2), $half_frame_width);
+    print "$header\n";
+    print "+" . ('-' x ($half_frame_width-1)) . "+" . ('-' x ($half_frame_width-1)) . "+\n";
+    for my $line (@{$f->{pixels}}) {
+	print "$line\n";
     }
-    print "\n";
+}
+# for my $lvl (0..$#levels) {
+#     for my $i (0..$#{$levels[$lvl]}) {
+# 	print ($levels[$lvl][$i] // ' ');
+#     }
+#     print "\n";
+# }
+
+sub abbrev {
+    my ($s, $max) = @_;
+    substr($s, $max-3) = '...' if length($s) > $max;
+    return $s;
+}
+sub frame_idx {
+    my ($i) = @_;
+    return int($i/$frame_width);
+}
+sub insert_number {
+    # Try to insert the number $d in $s such that the middle digit lands around $pos.
+    my ($s, $d, $pos) = @_;
+    $d = sprintf "%d", $d;
+    my $w = length($d);
+    $pos -= int($w/2);
+    $pos = 0 if $pos < 0;
+    substr($s, $pos, $w) = $d;
+    return $s;
 }
