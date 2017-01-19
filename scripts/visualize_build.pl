@@ -90,9 +90,9 @@ sub create_events {
 
 my %tasks = read_data($ARGV[0]);
 my @events = create_events(\%tasks);
-my @levels;
+my @levels; # this should just track $max_time at that level
 my %current;
-my @frames;
+my @frames; # the symbols should be written to the frames
 
 # A task has an assigned symbol and a "level" (the height above the
 # x-axis where its symbols will appear). It occupies the pixels for
