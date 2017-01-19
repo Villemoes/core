@@ -28,10 +28,12 @@ my $tick = 1.0;
 my $min_time = 0.5;
 my @ignore = qw(fstage build);
 my @ignore_opt;
+my $print_legend = 1;
 
 GetOptions("tick=f" => \$tick,
 	   "min-time=f" => \$min_time,
 	   "ignore=s" => \@ignore_opt,
+	   "legend!" => \$print_legend,
     ) or die "Option error";
 # --ignore somenoneexistingtaskname can be used to effectively ignore
 # nothing (one may want to spell it --ignore none).
@@ -222,6 +224,7 @@ for my $f (@frames) {
 	print "$line\n";
     }
     print "\n";
+    next unless $print_legend;
     for my $line (@{$f->{legend}}) {
 	print "$line\n";
     }
