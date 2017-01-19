@@ -21,7 +21,7 @@ compile install chrpath split package build);
 
 my $max_task_width = max(map {length} @common_tasks);
 my $max_recipe_width = 30 - $max_task_width - length("X Y:: ");
-my $frame_width = 120; # assumed to be even
+my $frame_width = 180; # assumed to be even
 my $half_frame_width = int($frame_width/2);
 
 my $tick = 1.0;
@@ -155,7 +155,7 @@ for my $event (@events) {
 	    my $l = max($frame->{left}, $task->{first});
 	    # ->last is inclusive, ->right and r are exclusive
 	    my $r = min($frame->{right}, $task->{last}+1);
-	    substr($frame->{pixels}[$lvl], $l-$frame->{left}, $r-$l) = 
+	    substr($frame->{pixels}[$lvl], $l-$frame->{left}, $r-$l) =
 		$task->{symbol} x ($r-$l);
 	}
 	# $levels[$lvl][$_] = $symbol for ($task->{first}..$task->{last});
@@ -172,19 +172,23 @@ $task->{first}, $task->{last};
     }
 }
 
-my $max_height = max(map { $_ ? scalar @{$_->{pixels}} : 0 } @frames);
 for (my $fi = 0; $fi < @frames; ++$fi) {
     my $frame = get_frame($fi);
-    for (my $lvl = 0; $lvl < $max_height; ++$lvl) {
-	$frame->{pixels}[$lvl] //= ' 'x$frame_width;
-    }
+    # Compute the 'legend'. Sort the tasks primarily by the position
+    # of their leftmost symbol (in this frame), secondarily by their
+    # level.
     $frame->{tasks} = [sort { max($frame->{left}, $a->{first}) <=> max($frame->{left}, $b->{first}) ||
 				  $a->{level} <=> $b->{level} }
 		       @{$frame->{tasks}}];
+    # Figure out how many columns we have room for in this frame.
     my $max_name = max(map {length($_->{name})} @{$frame->{tasks}}) + 3;
     my $columns = int($frame_width / $max_name);
+    # And how many rows do we then need?
     my $rows = int((scalar @{$frame->{tasks}} + $columns - 1)/$columns);
     $frame->{legend} = [(' 'x$frame_width) x $rows];
+    # Write the names column-wise; with the above ordering of tasks,
+    # that should make the legend for a symbol appear closeish to
+    # where it appears in the "graph".
     for (my $n = 0; $n < @{$frame->{tasks}}; ++$n) {
 	my $task = $frame->{tasks}[$n];
 	my $i = $n % $rows;
@@ -193,6 +197,19 @@ for (my $fi = 0; $fi < @frames; ++$fi) {
 	substr($frame->{legend}[$i], $j*$max_name, length($s)) = $s;
     }
 }
+
+# Make sure every graph and every legend has the same height.
+my $max_graph_height = max(map { scalar @{$_->{pixels}} } @frames);
+my $max_legend_height = max(map { scalar @{$_->{legend}} } @frames);
+for my $frame (@frames) {
+    for (my $lvl = 0; $lvl < $max_graph_height; ++$lvl) {
+	$frame->{pixels}[$lvl] //= ' 'x$frame_width;
+    }
+    for (my $i = 0; $i < $max_legend_height; ++$i) {
+	$frame->{legend}[$i] //= ' 'x$frame_width;
+    }
+}
+
 
 for my $f (@frames) {
     my $header = ' 'x$frame_width;
@@ -208,6 +225,7 @@ for my $f (@frames) {
     for my $line (@{$f->{legend}}) {
 	print "$line\n";
     }
+    print "\n";
 }
 # for my $lvl (0..$#levels) {
 #     for my $i (0..$#{$levels[$lvl]}) {
