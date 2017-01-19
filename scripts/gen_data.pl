@@ -13,7 +13,7 @@ for my $t (@types) {
 	for my $task (@tasks) {
 	    my $start = rand(1000);
 	    my $stop = $start + rand(40); # maybe make 10 depending on $task
-	    printf "%s\t%f\t%f\n", "${t}:${r}:${task}", $start, $stop;
+	    printf "%s\t%f\t%f\t%f\n", "${t}:${r}:${task}", $start, $stop, rand();
 	}
     }
 }
