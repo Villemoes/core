@@ -11,8 +11,8 @@ my @types = qw(machine cross);
 for my $t (@types) {
     for my $r (@recipes) {
 	for my $task (@tasks) {
-	    my $start = rand(100);
-	    my $stop = $start + rand(10); # maybe make 10 depending on $task
+	    my $start = rand(1000);
+	    my $stop = $start + rand(40); # maybe make 10 depending on $task
 	    printf "%s\t%f\t%f\n", "${t}:${r}:${task}", $start, $stop;
 	}
     }

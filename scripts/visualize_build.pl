@@ -21,7 +21,7 @@ compile install chrpath split package build);
 
 my $max_task_width = max(map {length} @common_tasks);
 my $max_recipe_width = 30 - $max_task_width - length("X Y:: ");
-my $frame_width = 60; # assumed to be even
+my $frame_width = 120; # assumed to be even
 my $half_frame_width = int($frame_width/2);
 
 my $tick = 1.0;
@@ -104,8 +104,7 @@ sub create_events {
 	push @events, {time => $_->{start}, type => 'start', task => $_};
 	push @events, {time => $_->{stop}, type => 'stop', task => $_};
     }
-    @events = sort {$a->{time} <=> $b->{time}} @events;
-    return @events;
+    return sort {$a->{time} <=> $b->{time}} @events;
 }
 
 my %tasks = read_data($ARGV[0]);
@@ -125,6 +124,20 @@ sub get_level {
     }
     return scalar @levels;
 }
+sub get_frame {
+    my ($fi) = @_;
+    my $frame = $frames[$fi];
+    if (not defined $frame) {
+	$frame = $frames[$fi] =
+	{ left => $fi*$frame_width,
+	  right => ($fi+1)*$frame_width,
+	  tasks => [],
+	  pixels => [],
+	  legend => [],
+	};
+    }
+    return $frame;
+}
 
 for my $event (@events) {
     my $task = $event->{task};
@@ -136,14 +149,7 @@ for my $event (@events) {
 	$levels[$lvl] = $task->{stop};
 
 	for (my $fi = frame_idx($task->{first}); $fi <= frame_idx($task->{last}); ++$fi) {
-	    my $frame = $frames[$fi];
-	    if (not defined $frame) {
-		$frames[$fi] = $frame = { left => $fi*$frame_width,
-					  right => ($fi+1)*$frame_width,
-					  tasks => [],
-					  pixels => [],
-		};
-	    }
+	    my $frame = get_frame($fi);
 	    push @{$frame->{tasks}}, $task;
 	    $frame->{pixels}[$lvl] //= ' 'x$frame_width;
 	    my $l = max($frame->{left}, $task->{first});
@@ -166,6 +172,28 @@ $task->{first}, $task->{last};
     }
 }
 
+my $max_height = max(map { $_ ? scalar @{$_->{pixels}} : 0 } @frames);
+for (my $fi = 0; $fi < @frames; ++$fi) {
+    my $frame = get_frame($fi);
+    for (my $lvl = 0; $lvl < $max_height; ++$lvl) {
+	$frame->{pixels}[$lvl] //= ' 'x$frame_width;
+    }
+    $frame->{tasks} = [sort { max($frame->{left}, $a->{first}) <=> max($frame->{left}, $b->{first}) ||
+				  $a->{level} <=> $b->{level} }
+		       @{$frame->{tasks}}];
+    my $max_name = max(map {length($_->{name})} @{$frame->{tasks}}) + 3;
+    my $columns = int($frame_width / $max_name);
+    my $rows = int((scalar @{$frame->{tasks}} + $columns - 1)/$columns);
+    $frame->{legend} = [(' 'x$frame_width) x $rows];
+    for (my $n = 0; $n < @{$frame->{tasks}}; ++$n) {
+	my $task = $frame->{tasks}[$n];
+	my $i = $n % $rows;
+	my $j = int($n / $rows);
+	my $s = $task->{symbol} . ' ' . $task->{name};
+	substr($frame->{legend}[$i], $j*$max_name, length($s)) = $s;
+    }
+}
+
 for my $f (@frames) {
     my $header = ' 'x$frame_width;
     $header = insert_number($header, $f->{left}, 0);
@@ -174,6 +202,10 @@ for my $f (@frames) {
     print "$header\n";
     print "+" . ('-' x ($half_frame_width-1)) . "+" . ('-' x ($half_frame_width-1)) . "+\n";
     for my $line (@{$f->{pixels}}) {
+	print "$line\n";
+    }
+    print "\n";
+    for my $line (@{$f->{legend}}) {
 	print "$line\n";
     }
 }
