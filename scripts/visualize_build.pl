@@ -230,12 +230,6 @@ for my $f (@frames) {
     }
     print "\n";
 }
-# for my $lvl (0..$#levels) {
-#     for my $i (0..$#{$levels[$lvl]}) {
-# 	print ($levels[$lvl][$i] // ' ');
-#     }
-#     print "\n";
-# }
 
 sub abbrev {
     my ($s, $max) = @_;
