@@ -47,7 +47,7 @@ class Timeout(object):
     def __enter__(self):
         self.expired = False
         self.oldhandler = signal.signal(signal.SIGALRM, self.handler)
-        signal.setitimer(signal.ITIMER_REAL, self.timeout)
+        signal.setitimer(signal.ITIMER_REAL, self.timeout, 0.1)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -119,13 +119,11 @@ class LockFile(object):
             pass
 
         with Timeout(timeout) as expired:
-            while True:
+            while not expired:
                 try:
                     return flock(self.fd, flags)
                 except OSError as e:
                     if e.errno == errno.EINTR:
-                        if expired:
-                            break
                         continue
                     raise
         raise _oserror(errno.ETIMEDOUT, "timeout waiting for lock")
