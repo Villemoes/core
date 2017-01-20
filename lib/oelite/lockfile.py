@@ -64,7 +64,7 @@ class Timeout(object):
 # Even if we create the file during open(), we never attempt to unlink the file.
 class LockFile(object):
     def __init__(self, name, flags = LOCK_EX):
-        self.name = name
+        self.name = os.path.realpath(name)
         # The flags is for use in a with statement, where we
         # can't otherwise specify the type of lock we want.
         self.flags = flags
