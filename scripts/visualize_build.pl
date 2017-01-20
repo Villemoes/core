@@ -40,7 +40,7 @@ GetOptions("tick=f" => \$tick,
 
 @ignore = @ignore_opt if @ignore_opt;
 @ignore = split(/,/, join(',', @ignore));
-@ignore = map { s/^do_// } @ignore;
+map { s/^do_// } @ignore;
 
 
 
