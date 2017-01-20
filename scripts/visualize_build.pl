@@ -162,8 +162,8 @@ for my $event (@events) {
 	}
 	# $levels[$lvl][$_] = $symbol for ($task->{first}..$task->{last});
 	$current{$task->{id}} = $task;
-	printf "%s\t%s\t%.2f\t%.2f\t%d\t%d\n", $symbol, $task->{name}, $task->{start}, $task->{stop},
-$task->{first}, $task->{last};
+	# printf "%s\t%s\t%.2f\t%.2f\t%d\t%d\n", $symbol, $task->{name}, $task->{start}, $task->{stop},
+	# $task->{first}, $task->{last};
     } elsif ($event->{type} eq 'stop') {
 	my $id = $task->{id};
 	die "task $id not in current" unless exists $current{$id};
