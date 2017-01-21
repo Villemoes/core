@@ -6,6 +6,7 @@ from oelite.dbutil import *
 import oelite.function
 import oelite.util
 from oelite.compat import open_cloexec
+import oelite.log
 
 import sys
 import os
@@ -199,7 +200,6 @@ class OEliteTask:
         self.function = meta.get_function(self.name)
         self.do_cleandirs()
         self.cwd = self.do_dirs() or meta.get("B")
-        self.stdin = open_cloexec("/dev/null", os.O_RDONLY)
         self.logfn = "%s/%s.%s.log"%(self.function.tmpdir, self.name, meta.get("DATETIME"))
         self.logsymlink = "%s/%s.log"%(self.function.tmpdir, self.name)
         oelite.util.makedirs(os.path.dirname(self.logfn))
@@ -213,21 +213,13 @@ class OEliteTask:
             os.remove(self.logsymlink)
         os.symlink(os.path.basename(self.logfn), self.logsymlink)
 
-    def save_context(self):
-        self.saved_stdio = oelite.util.StdioSaver()
-
     def apply_context(self):
-        os.dup2(self.stdin, sys.stdin.fileno())
-        sys.stdout.flush()
-        os.dup2(self.logfilefd, sys.stdout.fileno())
-        sys.stderr.flush()
-        os.dup2(self.logfilefd, sys.stderr.fileno())
+        oelite.log.set_task_context(self)
 
     def restore_context(self):
-        self.saved_stdio.restore(True)
+        oelite.log.unset_task_context(self)
 
     def cleanup_context(self):
-        os.close(self.stdin)
         os.close(self.logfilefd)
         if os.path.exists(self.logfn):
             if os.path.getsize(self.logfn) == 0:
@@ -243,7 +235,6 @@ class OEliteTask:
     def _start(self):
         self.prepare_context()
 
-        self.save_context()
         self.apply_context()
 
         try:
@@ -284,7 +275,6 @@ class OEliteTask:
             oelite.util.stracehack("<==%s" % self.name)
             return self.result
 
-        self.save_context()
         self.apply_context()
 
         try:
