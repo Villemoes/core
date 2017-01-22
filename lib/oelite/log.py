@@ -20,7 +20,11 @@ __all__ = ["log", "warn", "info", "set_task_context", "unset_task_context"]
 # (3) Our log messages don't necessarily fall into a strict linear
 # hierarchy corresponding to the syslog levels (debug, info, warning
 # etc.).
-
+#
+# (4) We can have much more fine-grained debugging. For example,
+# setting __debug = True in some recipe could cause us to write all
+# debug messages done in the context of a task belonging to that
+# recipe.
 
 
 # Create backups of the original stdio fds. When returning from task
