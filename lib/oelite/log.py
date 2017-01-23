@@ -1,4 +1,5 @@
 import sys
+import os
 
 from .compat import dup_cloexec, open_cloexec
 
