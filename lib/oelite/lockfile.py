@@ -103,7 +103,9 @@ class LockFile(object):
         # If the caller requested a non-blocking operation, or
         # requested an infinitely-blocking operation (by not passing a
         # timeout), we can simply call flock.
-        if timeout is None or (flags & LOCK_NB):
+        if timeout is None:
+            
+            or (flags & LOCK_NB):
             return flock(self.fd, flags)
 
         assert(timeout > 0)
@@ -177,3 +179,65 @@ class LockFile(object):
 
 if __name__ == "__main__":
     pass
+
+def timed_call(timeout, func, *args, **kwargs):
+    # Returns True on success, False on timeout, raises if an
+    # unexpected exception occurs.
+    class timeout(object):
+        def __init__(self):
+            pass
+        def handler():
+            self.expired = True
+        def __enter__(self):
+            self.expired = False
+            self.oldhandler = signal.signal(signal.SIGALRM, self.handler)
+            signal.setitimer(signal.ITIMER_REAL, timeout, timeout/1000)
+            return self
+        def __exit__(self, exc_type, exc_value, traceback):
+            # Disable the timer before restoring the old signal
+            # handler - if we're unlucky and the timer hasn't expired,
+            # it could do so just after restoring the signal handler
+            # but before disabling the timer. Since the default
+            # disposition for SIGALRM (and hence presumably what we're
+            # setting the handler back to) is to terminate the
+            # process, that would be a pity.
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, self.oldhandler)
+            return False
+
+    with timeout() as t:
+        while not t.expired:
+            try:
+                func(*args, **kwargs)
+                return True
+            except OSError as e:
+                if e.errno == errno.EINTR:
+                    continue
+                raise
+    return False
+
+
+class Timeout(object):
+    def __init__(self, timeout):
+        self.timeout = timeout
+        self.expired = False
+    def handler(self):
+        self.expired = True
+    def __enter__():
+        pass
+        return self
+    def __exit__(...):
+        pass
+    def call(self, func, *args, **kwargs):
+        while not self.expired:
+            try:
+                func(*args, **kwargs)
+                return True
+            except OSerror as e:
+                if e.errno == errno.EINTR:
+                    continue
+                raise
+        return False
+
+with Timeout(123) as t:
+    t.call(flock, self.fd, flags)
