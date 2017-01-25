@@ -4,6 +4,7 @@ import os
 import sys
 import subprocess
 import time
+import errno
 
 from oelite.compat import dup_cloexec
 import oelite.signal
@@ -208,10 +209,29 @@ def unique_list(seq):
 
 
 def makedirs(path, mode=0777):
-    if os.path.exists(path):
-        return
-    os.makedirs(path, mode)
-    return
+    # Create the directory 'path' and all necessary intermediate
+    # directories. The complexity stems from trying to ensure no
+    # exception is raised even if two processes concurrently try to do
+    # this operation.
+    while True:
+        try:
+            return os.mkdir(path, mode)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                # Ensure that 'path' is a directory or a symlink to
+                # one. This will raise ENOTDIR here instead of later
+                # when the caller tries to create a file inside
+                # 'path'.
+                os.stat(path + "/.")
+                return None
+            elif e.errno == errno.ENOENT and path != "":
+                # makedirs("") must raise ENOENT, hence the second
+                # condition.  We force u+rwx on all parent
+                # directories, anything else would be silly.
+                makedirs(os.path.dirname(path), mode | 0o700)
+                continue
+            else:
+                raise
 
 
 def touch(path, makedirs=False, truncate=False):

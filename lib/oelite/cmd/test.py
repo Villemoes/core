@@ -55,7 +55,6 @@ class MakedirsRaceTest(OEliteTest):
                 self.child()
             self.children.append(pid)
 
-    # @unittest.expectedFailure
     def runTest(self):
         """Test concurrent calls of oelite.util.makedirs"""
 
