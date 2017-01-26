@@ -25,6 +25,53 @@ class OEliteTest(unittest.TestCase):
         os.chdir("/")
         shutil.rmtree(self.wd)
 
+    def test_makedirs(self):
+        """Test the semantics of oelite.util.makedirs"""
+
+        makedirs = oelite.util.makedirs
+        touch = oelite.util.touch
+        self.assertIsNone(makedirs("x"))
+        self.assertIsNone(makedirs("x"))
+        self.assertIsNone(makedirs("y/"))
+        self.assertIsNone(makedirs("y/"))
+        self.assertIsNone(makedirs("x/y/z"))
+        # One can create multiple leaf directories in one go; mkdir -p
+        # behaves the same way.
+        self.assertIsNone(makedirs("z/.././z//w//../v"))
+        self.assertTrue(os.path.isdir("z/w"))
+        self.assertTrue(os.path.isdir("z/v"))
+
+        self.assertIsNone(touch("x/a"))
+        with self.assertRaises(OSError) as cm:
+            makedirs("x/a")
+        self.assertEqual(cm.exception.errno, errno.ENOTDIR)
+        with self.assertRaises(OSError) as cm:
+            makedirs("x/a/z")
+        self.assertEqual(cm.exception.errno, errno.ENOTDIR)
+
+        self.assertIsNone(os.symlink("a", "x/b"))
+        with self.assertRaises(OSError) as cm:
+            makedirs("x/b")
+        self.assertEqual(cm.exception.errno, errno.ENOTDIR)
+        with self.assertRaises(OSError) as cm:
+            makedirs("x/b/z")
+        self.assertEqual(cm.exception.errno, errno.ENOTDIR)
+
+        self.assertIsNone(os.symlink("../y", "x/c"))
+        self.assertIsNone(makedirs("x/c"))
+        self.assertIsNone(makedirs("x/c/"))
+
+        self.assertIsNone(os.symlink("nowhere", "broken"))
+        with self.assertRaises(OSError) as cm:
+            makedirs("broken")
+        self.assertEqual(cm.exception.errno, errno.ENOENT)
+
+        self.assertIsNone(os.symlink("loop1", "loop2"))
+        self.assertIsNone(os.symlink("loop2", "loop1"))
+        with self.assertRaises(OSError) as cm:
+            makedirs("loop1")
+        self.assertEqual(cm.exception.errno, errno.ELOOP)
+
 class MakedirsRaceTest(OEliteTest):
     def child(self):
         signal.alarm(2) # just in case of infinite recursion bugs
@@ -75,11 +122,12 @@ class MakedirsRaceTest(OEliteTest):
             os.kill(pid, signal.SIGKILL)
             os.waitpid(pid, 0)
         super(MakedirsRaceTest, self).tearDown()
-
     
 def run(options, args, config):
     suite = unittest.TestSuite()
     suite.addTest(MakedirsRaceTest())
+    suite.addTest(OEliteTest('test_makedirs'))
+
     if options.show:
         for t in suite:
             print str(t), "--", t.shortDescription()
