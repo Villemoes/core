@@ -265,3 +265,17 @@ def timing_info(msg, start):
     msg += pretty_time(delta)
     info(msg)
     return
+
+def chunk_iter(fn, chunk_size = 32768):
+    with open(fn) as f:
+        while True:
+            chunk = f.read(chunk_size)
+            if chunk:
+                yield chunk
+            else:
+                return
+
+def hash_file(hasher, fn):
+    for chunk in chunk_iter(fn):
+        hasher.update(chunk)
+    return hasher
