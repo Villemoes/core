@@ -3,7 +3,16 @@ import os
 
 from .compat import dup_cloexec, open_cloexec
 
-__all__ = ["log", "warn", "info", "set_task_context", "unset_task_context"]
+__all__ = ["err", "warn", "notice", "info", "debug",
+           "set_task_context", "unset_task_context"]
+
+DEBUG  = 10
+INFO   = 20
+NOTICE = 30
+WARN   = 40
+ERR    = 50
+
+log_level = INFO
 
 # We build our own logging infrastructure for a few reasons:
 #
@@ -20,7 +29,12 @@ __all__ = ["log", "warn", "info", "set_task_context", "unset_task_context"]
 #
 # (3) Our log messages don't necessarily fall into a strict linear
 # hierarchy corresponding to the syslog levels (debug, info, warning
-# etc.).
+# etc.). We have never, and probably never will, use these levels for
+# selecting what gets printed other than suppressing debug (that is,
+# our loglevel has always been binary); on the other hand, we may want
+# to use the severity of the messages for deciding to e.g. write the
+# message to both the current task log file as well as to the
+# terminal.
 #
 # (4) We can have much more fine-grained debugging. For example,
 # setting __debug = True in some recipe could cause us to write all
@@ -64,8 +78,10 @@ current_task = None
 #
 # For now, skip this; I just wanted a place to put these comments.
 if False:
-    please_dont_close_fd1_I_need_it = sys.stdout
-    sys.stdout = os.fdopen(sys.stdout.fileno(), "w", 1)
+    # please_dont_close_fd1_I_need_it = sys.stdout
+    sys.stdout.close()
+    os.dup2(orig_stdout_fd, 1)
+    sys.stdout = os.fdopen(1, "w", 1)
 
 
 # When we change the file descriptor from underneath a Python file
@@ -75,7 +91,7 @@ if False:
 def _flush_stdio():
     sys.stdout.flush()
     sys.stderr.flush()
-    
+
 def set_task_context(task):
     global current_task
     assert(current_task is None)
@@ -104,29 +120,20 @@ def unset_task_context(task):
 # when printing to the terminal, check if current_task is set; if so,
 # preceed the message with the task name.
 #
-# 
+#
 
-
-# I really hate that I often end up writing print("%s %d", foo, bar)
-# when it should have been print("%s %d" % (foo, bar)), especially
-# when it's a dummy print statement I've inserted for debugging
-# purposes. It's not really hard to make the log functions DTRT: All
-# optional arguments must be given via keywords; any positional
+# I really hate that I often end up writing log("%s %d", foo, bar)
+# when it should have been log("%s %d" % (foo, bar)), especially when
+# it's a dummy print statement I've inserted for debugging purposes -
+# after going through all the recipe parsing, hash computation
+# etc. etc., the build ends with an annoying TypeError, and I have to
+# go through it all again. It's not really hard to make the log
+# functions DTRT: All optional arguments must be given via keywords
+# (they should rarely be used or needed anyway); any positional
 # arguments are assumed to be for doing formatting. If there are no
 # positional arguments, either the caller did the formatting himself
 # or there simply is nothing to do.
-
-def _log(msg, **kwargs):
-    # Intelligent newline. If the caller doesn't provide one and
-    # doesn't explicitly suppress this, we append one.
-    if not msg.endswith("\n") and not kwargs.get("no_newline"):
-        msg += "\n"
-    # For now, this doesn't do much other than a print statement would
-    # have done.
-    sys.stdout.write(msg)
-    
-# We'll create convenience wrappers for this.
-def log(fmt, *args, **kwargs):
+def _log_sprintf(fmt, *args):
     msg = fmt
     if args:
         try:
@@ -140,12 +147,41 @@ def log(fmt, *args, **kwargs):
             # Fall through and just use the format string as log
             # message. The non-format parts might still contain useful
             # info.
-    _log(msg, **kwargs)
+    return msg
+
+# We'll create convenience wrappers for this.
+def _log(fmt, *args, **kwargs):
+    if kwargs['level'] < log_level:
+        return
+
+    msg = _log_sprintf(fmt, *args)
+
+    # Intelligent newline. If the caller doesn't provide one and
+    # doesn't explicitly suppress this (with the tbc ==
+    # to-be-continued keyword arg), we append one.
+    if not msg.endswith("\n") and not kwargs.get("tbc"):
+        msg += "\n"
+
+    # For now, this doesn't do much other than a print statement would
+    # have done.
+    sys.stdout.write(msg)
+
+def debug(fmt, *args, **kwargs):
+    kwargs['level'] = DEBUG
+    _log(fmt, *args, **kwargs)
 
 def info(fmt, *args, **kwargs):
     kwargs['level'] = INFO
-    log(fmt, *args, **kwargs)
+    _log(fmt, *args, **kwargs)
+
+def notice(fmt, *args, **kwargs):
+    kwargs['level'] = NOTICE
+    _log(fmt, *args, **kwargs)
+
 def warn(fmt, *args, **kwargs):
     kwargs['level'] = WARN
-    log(fmt, *args, **kwargs)
-# etc. etc.
+    _log(fmt, *args, **kwargs)
+
+def err(fmt, *args, **kwargs):
+    kwargs['level'] = ERR
+    _log(fmt, *args, **kwargs)
