@@ -83,7 +83,7 @@ class UrlFetcher():
 
     def localsignature(self):
         m = hashlib.sha1()
-        m.update(open(self.localpath, "r").read())
+        oelite.util.hash_file(m, self.localpath)
         return m.hexdigest()
 
     def get_proxies(self, d):
