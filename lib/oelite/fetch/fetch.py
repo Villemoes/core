@@ -328,13 +328,11 @@ class OEliteUri:
         dst = os.path.join(mirror, src[len(self.ingredients)+1:])
         if os.path.exists(dst):
             m = hashlib.md5()
-            with open(src, "r") as srcfile:
-                m.update(srcfile.read())
-                src_md5 = m.hexdigest()
+            oelite.util.hash_file(m, src)
+            src_md5 = m.hexdigest()
             m = hashlib.md5()
-            with open(dst, "r") as dstfile:
-                m.update(dstfile.read())
-                dst_md5 = m.hexdigest()
+            oelite.util.hash_file(m, dst)
+            dst_md5 = m.hexdigest()
             if src_md5 != dst_md5:
                 print "Mirror inconsistency:", dst
                 print "%s != %s"%(src_md5, dst_md5)
