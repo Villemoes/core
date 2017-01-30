@@ -1,5 +1,6 @@
 import oelite.fetch
 import oelite.path
+import oelite.util
 import os
 import hashlib
 
@@ -35,6 +36,6 @@ class LocalFetcher():
         if os.path.isdir(self.localpath):
             raise oelite.fetch.NoSignature(self.uri, "can't compute directory signature")
         m = hashlib.sha1()
-        m.update(open(self.localpath, "r").read())
+        oelite.util.hash_file(m, self.localpath)
         self._signature = m.digest()
         return self._signature
