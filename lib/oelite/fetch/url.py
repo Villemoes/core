@@ -119,8 +119,7 @@ def grab(url, filename, timeout=120, retry=5, proxies=None, passive_ftp=True):
 
     d = os.path.dirname(filename)
     f = os.path.basename(filename)
-    if not os.path.exists(d):
-        os.makedirs(d)
+    oelite.util.makedirs(d)
 
     # Use mkstemp to create and open a guaranteed unique file. We use
     # the file descriptor as wget's stdout. We must download to the
