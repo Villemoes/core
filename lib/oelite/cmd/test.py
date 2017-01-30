@@ -9,6 +9,7 @@ import time
 import unittest
 
 import oelite.util
+import oelite.signal
 
 description = "Run tests of internal utility functions"
 def add_parser_options(parser):
@@ -123,10 +124,43 @@ class MakedirsRaceTest(OEliteTest):
             os.waitpid(pid, 0)
         super(MakedirsRaceTest, self).tearDown()
     
+class SigPipeTest(OEliteTest):
+    def run_sub(self, preexec_fn):
+        from subprocess import PIPE, Popen
+
+        sub = Popen(["yes"], stdout=PIPE, stderr=PIPE,
+                    preexec_fn = preexec_fn)
+        # Force a broken pipe.
+        sub.stdout.close()
+        err = sub.stderr.read()
+        ret = sub.wait()
+        return (ret, err)
+
+    @unittest.skipIf(sys.version_info >= (3, 2), "Python is new enough")
+    def test_no_restore(self):
+        """Check that subprocesses inherit the SIG_IGNORE disposition for SIGPIPE."""
+        (ret, err) = self.run_sub(None)
+        # This should terminate with a write error; we assume that
+        # 'yes' is so well-behaved that it both exits with a non-zero
+        # exit code as well as prints an error message containing
+        # strerror(errno).
+        self.assertGreater(ret, 0)
+        self.assertIn(os.strerror(errno.EPIPE), err)
+
+    def test_restore(self):
+        """Check that oelite.signal.restore_defaults resets the SIGPIPE disposition."""
+        (ret, err) = self.run_sub(oelite.signal.restore_defaults)
+        # This should terminate due to SIGPIPE, and not get a chance
+        # to write to stderr.
+        self.assertEqual(ret, -signal.SIGPIPE)
+        self.assertEqual(err, "")
+
 def run(options, args, config):
     suite = unittest.TestSuite()
     suite.addTest(MakedirsRaceTest())
     suite.addTest(OEliteTest('test_makedirs'))
+    suite.addTest(SigPipeTest('test_no_restore'))
+    suite.addTest(SigPipeTest('test_restore'))
 
     if options.show:
         for t in suite:
