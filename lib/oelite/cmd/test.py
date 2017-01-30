@@ -1,5 +1,6 @@
 import errno
 import fcntl
+import hashlib
 import os
 import select
 import shutil
@@ -99,6 +100,26 @@ class OEliteTest(unittest.TestCase):
 
         self.assertIsNone(os.close(fd))
 
+    def test_hash_file(self):
+        testv = [(0, "d41d8cd98f00b204e9800998ecf8427e", "da39a3ee5e6b4b0d3255bfef95601890afd80709"),
+                 (1, "0cc175b9c0f1b6a831c399e269772661", "86f7e437faa5a7fce15d1ddcb9eaeaea377667b8"),
+                 (1000, "cabe45dcc9ae5b66ba86600cca6b8ba8", "291e9a6c66994949b57ba5e650361e98fc36b1ba"),
+                 (1000000, "7707d6ae4e027c70eea2a935c2296f21", "34aa973cd4c4daa4f61eeb2bdbad27316534016f")]
+        hash_file = oelite.util.hash_file
+
+        for size, md5, sha1 in testv:
+            # open and say "aaaa...." :-)
+            with tempfile.NamedTemporaryFile() as tmp:
+                self.assertIsNone(tmp.write("a"*size))
+                self.assertIsNone(tmp.flush())
+                self.assertEqual(os.path.getsize(tmp.name), size)
+
+                h = hash_file(hashlib.md5(), tmp.name).hexdigest()
+                self.assertEqual(h, md5)
+
+                h = hash_file(hashlib.sha1(), tmp.name).hexdigest()
+                self.assertEqual(h, sha1)
+
 class MakedirsRaceTest(OEliteTest):
     def child(self):
         signal.alarm(2) # just in case of infinite recursion bugs
@@ -188,6 +209,7 @@ def run(options, args, config):
     suite.addTest(SigPipeTest('test_no_restore'))
     suite.addTest(SigPipeTest('test_restore'))
     suite.addTest(OEliteTest('test_cloexec'))
+    suite.addTest(OEliteTest('test_hash_file'))
 
     if options.show:
         for t in suite:
