@@ -57,25 +57,3 @@ else:
     except KeyError:
         dup_cloexec = dup_cloexec_fallback
 
-
-def has_cloexec(fd):
-    flags = fcntl.fcntl(fd, fcntl.F_GETFD)
-    return (flags & fcntl.FD_CLOEXEC) != 0
-
-def test_open_cloexec():
-    fd = open_cloexec("/dev/null", os.O_RDONLY)
-    assert(has_cloexec(fd))
-    os.close(fd)
-    fd = open_cloexec("/dev/null", os.O_WRONLY)
-    assert(has_cloexec(fd))
-    os.close(fd)
-
-def test_dup_cloexec():
-    fd = dup_cloexec(sys.stdin.fileno())
-    assert(has_cloexec(fd))
-    os.close(fd)
-
-
-if __name__ == "__main__":
-    test_open_cloexec()
-    test_dup_cloexec()

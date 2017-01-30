@@ -1,4 +1,5 @@
 import errno
+import fcntl
 import os
 import select
 import shutil
@@ -10,6 +11,7 @@ import unittest
 
 import oelite.util
 import oelite.signal
+import oelite.compat
 
 description = "Run tests of internal utility functions"
 def add_parser_options(parser):
@@ -72,6 +74,30 @@ class OEliteTest(unittest.TestCase):
         with self.assertRaises(OSError) as cm:
             makedirs("loop1")
         self.assertEqual(cm.exception.errno, errno.ELOOP)
+
+    def test_cloexec(self):
+        open_cloexec = oelite.compat.open_cloexec
+        dup_cloexec = oelite.compat.dup_cloexec
+
+        def has_cloexec(fd):
+            flags = fcntl.fcntl(fd, fcntl.F_GETFD)
+            return (flags & fcntl.FD_CLOEXEC) != 0
+
+        fd = open_cloexec("/dev/null", os.O_RDONLY)
+        self.assertGreaterEqual(fd, 0)
+        self.assertTrue(has_cloexec(fd))
+
+        fd2 = os.dup(fd)
+        self.assertGreaterEqual(fd2, 0)
+        self.assertFalse(has_cloexec(fd2))
+        self.assertIsNone(os.close(fd2))
+
+        fd2 = dup_cloexec(fd)
+        self.assertGreaterEqual(fd2, 0)
+        self.assertTrue(has_cloexec(fd2))
+        self.assertIsNone(os.close(fd2))
+
+        self.assertIsNone(os.close(fd))
 
 class MakedirsRaceTest(OEliteTest):
     def child(self):
@@ -161,6 +187,7 @@ def run(options, args, config):
     suite.addTest(OEliteTest('test_makedirs'))
     suite.addTest(SigPipeTest('test_no_restore'))
     suite.addTest(SigPipeTest('test_restore'))
+    suite.addTest(OEliteTest('test_cloexec'))
 
     if options.show:
         for t in suite:
