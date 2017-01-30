@@ -228,29 +228,6 @@ class OEliteUri:
             print "%s: no checksum known for %s"%(self.recipe, url)
             return ""
 
-    def cache(self):
-        if not "cache" in dir(self.fetcher):
-            return True
-        return self.fetcher.cache()
-
-    def write_checksum(self, filepath):
-        md5path = filepath + ".md5"
-        checksum = hashlib.md5()
-        with open(filepath) as f:
-            checksum.update(f.read())
-        with open(md5path, "w") as f:
-            f.write(checksum.digest())
-
-    def verify_checksum(self, filepath):
-        md5path = filepath + ".md5"
-        if not os.path.exists(md5path):
-            return None
-        checksum = hashlib.md5()
-        with open(filepath) as f:
-            checksum.update(f.read())
-        with open(md5path) as f:
-            return f.readline().strip() == checksum.digest()
-
     def fetch(self):
         if not "fetch" in dir(self.fetcher):
             return True
