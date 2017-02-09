@@ -422,6 +422,11 @@ class OEliteBaker:
 
         rusage.end()
 
+        # We've done most of the expansion we'll ever do, so the dicts
+        # used for interning dependency sets and (value,
+        # dependency_set) tuples have served their purpose.
+        oelite.meta.dict.drop_caches()
+
         if count != total:
             print ""
             self.runq.print_metahashable_tasks()

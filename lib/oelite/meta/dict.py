@@ -17,6 +17,31 @@ def deepcopy_str(x, memo):
 copy._deepcopy_dispatch[str] = deepcopy_str
 
 
+frozenset_cache = {}
+dep_tuple_cache = {}
+
+def intern_frozenset(it):
+    f = frozenset(it)
+    try:
+        return frozenset_cache[f]
+    except KeyError:
+        frozenset_cache[f] = f
+        return f
+def intern_dep_tuple(val, deps):
+    f = intern_frozenset(deps)
+    t = (val, f)
+    try:
+        return dep_tuple_cache[t]
+    except KeyError:
+        dep_tuple_cache[t] = t
+        return t
+
+def drop_caches():
+    global frozenset_cache
+    global dep_tuple_cache
+    frozenset_cache = {}
+    dep_tuple_cache = {}
+
 def unpickle(file):
     return DictMeta(meta=file)
 
@@ -217,10 +242,8 @@ class DictMeta(MetaData):
         override_dep = None
         if var in self.cplx and "__overrides" in self.cplx[var]:
             current_overrides, override_dep = self._get_overrides()
-            if override_dep:
-                override_dep.add("OVERRIDES")
-            else:
-                override_dep = set(["OVERRIDES"])
+            override_dep = set(override_dep)
+            override_dep.add("OVERRIDES")
             olist = self.cplx[var]["__overrides"]
             var_overrides = olist[self.OVERRIDE_TYPE['']] or {}
             append_overrides = olist[self.OVERRIDE_TYPE['>']] or {}
@@ -277,10 +300,10 @@ class DictMeta(MetaData):
 
         if override_dep:
             deps = deps.union(override_dep)
-        if not deps:
-            deps = None
-        self.expand_cache[var] = (val, deps)
-        return (val, deps)
+        t = intern_dep_tuple(val, deps)
+        self.expand_cache[var] = t
+        return t
+
 
     def _fill_expand_cache(self):
         if self.expand_cache_filled:
