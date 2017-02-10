@@ -32,7 +32,7 @@ class CookBook(Mapping):
         self.db = sqlite.connect(":memory:")
         if not self.db:
             raise Exception("could not create in-memory sqlite db")
-        self.db.text_factory = str
+        self.db.text_factory = intern
         self.dbc = CursorWrapper(self.db.cursor(), profile=False)
         self.init_db()
         self.recipes = {}
