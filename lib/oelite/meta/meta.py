@@ -33,28 +33,15 @@ class ExpansionError(Exception):
         print "Expansion stack:\n%s"%(str(self.stack))
 
 
-class ExpansionStack:
-
-    def __init__(self):
-        self.stack = []
-        self.python = False
-        return
-
+class ExpansionStack(list):
     def push(self, var):
-        if var in self.stack:
-            raise Exception("Circular expansion: %s"%("->".join(map(lambda x: "${%s}" % x, self.stack))))
-        self.stack.append(var)
-        return
+        if var in self:
+            raise Exception("Circular expansion: %s"%("->".join(map(lambda x: "${%s}" % x, self))))
+        self.append(var)
 
-    def pop(self):
-        del self.stack[-1:]
-        return
-
-    def __len__(self):
-        return len(self.stack)
-
-    def __str__(self, prefix="  "):
-        return prefix + ("\n%s"%(prefix)).join(self.stack)
+    def __str__(self):
+        prefix = "  "
+        return prefix + ("\n%s"%(prefix)).join(self)
 
 
 pythonfunc_code_cache = {}
