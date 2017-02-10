@@ -38,7 +38,7 @@ class OElitePackage:
             provides.add('%s:%s'%(package_type, self.name))
         else:
             provides.add(self.name)
-        return provides
+        return map(intern, provides)
 
     def get_recprovides(self, deptype, get_depends):
         depends = self.recipe.get('%s_%s'%(deptype, self.name))
