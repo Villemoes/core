@@ -170,7 +170,6 @@ class MetaData(MutableMapping):
 
 
     def pythonfunc_init(self):
-        self.pythonfunc_cache = {}
         imports = (self.get("OE_IMPORTS", expand=False) or "")
         g = {}
         g["__builtins__"] = globals()["__builtins__"]
@@ -190,12 +189,9 @@ class MetaData(MutableMapping):
 
 
     def get_pythonfunc(self, var, name=None, tmpdir=None, set_os_environ=True):
-        #if function in self.pythonfunc_cache:
-        #    return self.pythonfunc_cache[function]
         function = oelite.function.PythonFunction(
             self, var, name=name, tmpdir=tmpdir,
             set_os_environ=set_os_environ)
-        #self.pythonfunc_cache[function] = function
         return function
 
 
